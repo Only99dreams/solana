@@ -1,0 +1,373 @@
+/* src/styles/airdrop.css */
+:root {
+  --background: hsl(220, 26%, 8%);
+  --foreground: hsl(0, 0%, 98%);
+  --card: hsl(220, 26%, 10%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(262, 100%, 75%);
+  --primary-foreground: hsl(220, 26%, 8%);
+  --secondary: hsl(220, 26%, 14%);
+  --secondary-foreground: hsl(0, 0%, 95%);
+  --accent: hsl(262, 100%, 75%);
+  --border: hsl(220, 26%, 18%);
+  --destructive: hsl(0, 84%, 60%);
+  
+  /* Crypto-specific colors */
+  --crypto-purple: hsl(262, 100%, 75%);
+  --crypto-blue: hsl(217, 91%, 60%);
+  --crypto-pink: hsl(316, 100%, 75%);
+  --crypto-cyan: hsl(191, 100%, 75%);
+  
+  /* Glass effects */
+  --glass-bg: hsla(220, 26%, 10%, 0.6);
+  --glass-border: hsla(262, 100%, 75%, 0.2);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, var(--background), hsl(220, 26%, 12%));
+    color: var(--foreground);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.app-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, var(--background), hsl(220, 26%, 12%));
+  color: var(--foreground);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--card);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  border-radius: 1rem;
+}
+
+/* Utility classes */
+.gradient-text {
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px hsla(262, 100%, 75%, 0.5), 0 0 40px hsla(262, 100%, 75%, 0.3); }
+  to { box-shadow: 0 0 30px hsla(262, 100%, 75%, 0.8), 0 0 60px hsla(262, 100%, 75%, 0.4); }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: hsla(262, 100%, 75%, 0.3); }
+  50% { border-color: hsla(262, 100%, 75%, 0.8); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* Layout */
+.container {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  
+}
+
+/* Header */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hero Section */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 20%, hsla(262, 100%, 75%, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, hsla(217, 91%, 60%, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  padding-top: 6rem;
+}
+
+.hero-text h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.hero-text .highlight {
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-text p {
+  font-size: 1.25rem;
+  color: hsl(220, 9%, 66%);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.hero-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.crypto-orb {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  position: relative;
+  animation: float 6s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+}
+
+.crypto-orb::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--background);
+  z-index: 1;
+}
+
+.crypto-orb::after {
+  content: 'SOL';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  color: var(--crypto-purple);
+  z-index: 2;
+}
+
+/* Info Section */
+.info-section {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, hsla(262, 100%, 75%, 0.05), hsla(217, 91%, 60%, 0.05));
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.section-description {
+  text-align: center;
+  color: hsl(220, 9%, 66%);
+  font-size: 1.125rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.info-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px hsla(262, 100%, 75%, 0.2);
+}
+
+.info-card-icon {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.info-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+
+.info-card p {
+  color: hsl(220, 9%, 66%);
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .hero-text h1 {
+    font-size: 2.5rem;
+  }
+
+  .crypto-orb {
+    width: 200px;
+    height: 200px;
+  }
+
+  .crypto-orb::after {
+    font-size: 3rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* Add to src/styles/airdrop.css */
+
+/* Transfer button specific animations */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Glassmorphism button enhancements */
+.transfer-btn {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Cyber button enhancements */
+.cyber-transfer-btn {
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Loading animation */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsla(262, 100%, 75%, 0.5); }
+  50% { box-shadow: 0 0 30px hsla(262, 100%, 75%, 0.8); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Base button style (similar to connect wallet) */
+.transfer-btn,
+.cyber-transfer-btn {
+  display: inline-block;
+  padding: 1rem 2.5rem;  /* bigger size */
+  font-size: 1.125rem;   /* slightly larger text */
+  font-weight: 600;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease-in-out;
+  color: var(--primary-foreground);
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* Hover & focus states */
+.transfer-btn:hover,
+.cyber-transfer-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px hsla(262, 100%, 75%, 0.3);
+}
+
+.transfer-btn:active,
+.cyber-transfer-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px hsla(262, 100%, 75%, 0.2);
+}
