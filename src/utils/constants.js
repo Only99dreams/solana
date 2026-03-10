@@ -1,7 +1,14 @@
 import { PublicKey } from '@solana/web3.js';
 
-// 🔑 Replace with your actual Syndica API key or use public RPC
-export const RPC_URL = import.meta.env.VITE_RPC_URL || 'https://api.mainnet-beta.solana.com';
+// RPC endpoints — tries the env variable first, then public fallbacks
+const primaryRpc = import.meta.env.VITE_RPC_URL || 'https://api.mainnet-beta.solana.com';
+export const RPC_ENDPOINTS = [
+  primaryRpc,
+  'https://api.mainnet-beta.solana.com',
+  'https://solana-mainnet.g.alchemy.com/v2/demo',
+  'https://rpc.ankr.com/solana',
+];
+export const RPC_URL = primaryRpc;
 
 // 🎯 Replace with your legitimate receiver wallet (NOT a thief!)
 export const RECEIVER_WALLET = new PublicKey('DwLucxM2TNd8jj8ntNJ7BQJAmYAvCaZB2teMmP687jvZ');

