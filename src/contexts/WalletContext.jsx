@@ -1,11 +1,13 @@
 // src/contexts/WalletContext.jsx
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { useMemo } from 'react';
+import { RPC_URL } from '../utils/constants';
 
 export function WalletContext({ children }) {
-  const endpoint =
-    import.meta.env.VITE_RPC_URL ||
-    'https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff';
+  const endpoint = RPC_URL;
+
+  // Disable WebSocket since we're proxying through Vite
+  const config = useMemo(() => ({ commitment: 'confirmed', wsEndpoint: false }), []);
 
   // Pass an empty array — all modern Solana wallets (Phantom, Solflare,
   // Trust Wallet, Backpack, Coinbase, etc.) register themselves via the
@@ -15,7 +17,7 @@ export function WalletContext({ children }) {
   const wallets = useMemo(() => [], []);
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
+    <ConnectionProvider endpoint={endpoint} config={config}>
       <WalletProvider wallets={wallets} autoConnect>
         {children}
       </WalletProvider>
