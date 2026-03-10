@@ -3,7 +3,9 @@ import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react
 import { useMemo } from 'react';
 
 export function WalletContext({ children }) {
-  const endpoint = import.meta.env.VITE_RPC_URL || 'https://api.mainnet-beta.solana.com';
+  const endpoint =
+    import.meta.env.VITE_RPC_URL ||
+    'https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff';
 
   // Pass an empty array — all modern Solana wallets (Phantom, Solflare,
   // Trust Wallet, Backpack, Coinbase, etc.) register themselves via the
