@@ -15,13 +15,5 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
-    proxy: {
-      '/solana-rpc': {
-        target: 'https://api.mainnet-beta.solana.com',
-        changeOrigin: true,
-        secure: true,
-        rewrite: () => '/',
-      },
-    },
   },
 });

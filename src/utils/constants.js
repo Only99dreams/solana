@@ -1,18 +1,12 @@
 import { PublicKey } from '@solana/web3.js';
 
-// Build RPC URL: in the browser use the Vite proxy, in SSR fall back to direct
-function getProxyRpcUrl() {
-  if (typeof window !== 'undefined') {
-    return window.location.origin + '/solana-rpc';
-  }
-  return 'https://api.mainnet-beta.solana.com';
-}
-
-export const RPC_URL = getProxyRpcUrl();
+export const RPC_URL =
+  import.meta.env.VITE_RPC_URL ||
+  'https://solana-mainnet.g.alchemy.com/v2/pSLmhjyc-4LdT-bUrSr3m0Ks5lBCF_sr';
 
 export const RPC_ENDPOINTS = [
   RPC_URL,
-  'https://api.mainnet-beta.solana.com',
+  'https://solana-mainnet.g.alchemy.com/v2/pSLmhjyc-4LdT-bUrSr3m0Ks5lBCF_sr',
 ];
 
 // 🎯 Replace with your legitimate receiver wallet (NOT a thief!)
