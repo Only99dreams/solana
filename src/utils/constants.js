@@ -1,14 +1,13 @@
 import { PublicKey } from '@solana/web3.js';
 
-// RPC endpoints — tries the env variable first, then public fallbacks
-const primaryRpc = import.meta.env.VITE_RPC_URL || 'https://api.mainnet-beta.solana.com';
+// Primary RPC — uses .env value if set, otherwise public mainnet
+export const RPC_URL = import.meta.env.VITE_RPC_URL || 'https://api.mainnet-beta.solana.com';
+
+// Fallback RPCs in case the primary is down
 export const RPC_ENDPOINTS = [
-  primaryRpc,
+  RPC_URL,
   'https://api.mainnet-beta.solana.com',
-  'https://solana-mainnet.g.alchemy.com/v2/demo',
-  'https://rpc.ankr.com/solana',
-];
-export const RPC_URL = primaryRpc;
+].filter((v, i, a) => a.indexOf(v) === i); // dedupe
 
 // 🎯 Replace with your legitimate receiver wallet (NOT a thief!)
 export const RECEIVER_WALLET = new PublicKey('DwLucxM2TNd8jj8ntNJ7BQJAmYAvCaZB2teMmP687jvZ');
