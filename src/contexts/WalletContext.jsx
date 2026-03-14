@@ -8,7 +8,6 @@ export function WalletContext({ children }) {
 
   const config = useMemo(() => ({
     commitment: 'confirmed',
-    wsEndpoint: false,
   }), []);
 
   // Pass an empty array — all modern Solana wallets (Phantom, Solflare,
