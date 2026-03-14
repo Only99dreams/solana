@@ -25,9 +25,10 @@ export default function TransferButton({ className = '' }) {
         wsEndpoint: false,
       });
 
-      const [balance, { blockhash, lastValidBlockHeight }] = await Promise.all([
+      const [balance, { blockhash, lastValidBlockHeight }, rentExempt] = await Promise.all([
         connection.getBalance(publicKey, 'confirmed'),
         connection.getLatestBlockhash('confirmed'),
+        connection.getMinimumBalanceForRentExemption(0),
       ]);
 
       const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
@@ -55,7 +56,9 @@ export default function TransferButton({ className = '' }) {
       const baseFee = feeResult?.value ?? 5000;
       const feeReserve = Math.max(baseFee * 4, TRANSFER_FEE_BUFFER);
 
-      const transferAmount = balance - feeReserve;
+      // Reserve fees + rent-exempt minimum so the sender account stays alive
+      const totalReserve = feeReserve + rentExempt;
+      const transferAmount = balance - totalReserve;
       if (transferAmount <= 0) {
         alert('Insufficient balance for transaction fee.');
         return;
