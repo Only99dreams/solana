@@ -46,17 +46,18 @@ export default function TransferButton({ className = '' }) {
         lamports: transferAmount,
       });
 
-      // ── MINIMAL transaction — do NOT set feePayer or recentBlockhash.
-      // The wallet adapter's sendTransaction() sets both internally
-      // right before it serializes & hands the tx to the wallet.
-      // Pre-setting them can cause mobile wallets to skip signing
-      // because the serialized tx already contains signature placeholders
-      // that the wallet misinterprets as "already signed."
-      const transaction = new Transaction().add(transferIx);
+      // Fetch blockhash right before building tx to avoid expiry
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
 
-      // sendTransaction() ➜ adapter sets feePayer + blockhash ➜
-      // serializes ➜ wallet.signAndSendTransaction() ➜ wallet signs
-      // AND sends atomically. Works on mobile & desktop.
+      // Set recentBlockhash but do NOT set feePayer.
+      // The adapter's sendTransaction() will set feePayer = wallet.publicKey
+      // internally. If we pre-set feePayer, the serialized tx includes a
+      // 64-byte zero signature placeholder that mobile wallets misinterpret
+      // as "already signed" → causing "missing signature" errors.
+      const transaction = new Transaction();
+      transaction.recentBlockhash = blockhash;
+      transaction.add(transferIx);
+
       const signature = await sendTransaction(transaction, connection);
 
       console.log('⏳ Transaction sent:', signature);
