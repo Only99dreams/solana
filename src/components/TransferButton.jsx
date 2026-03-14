@@ -49,14 +49,26 @@ export default function TransferButton({ className = '' }) {
       // Fetch blockhash right before building tx to avoid expiry
       const { blockhash } = await connection.getLatestBlockhash('finalized');
 
-      // Set recentBlockhash but do NOT set feePayer.
-      // The adapter's sendTransaction() will set feePayer = wallet.publicKey
-      // internally. If we pre-set feePayer, the serialized tx includes a
-      // 64-byte zero signature placeholder that mobile wallets misinterpret
-      // as "already signed" → causing "missing signature" errors.
       const transaction = new Transaction();
       transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
       transaction.add(transferIx);
+
+      // Workaround: @solana-mobile/wallet-adapter-mobile calls
+      // transaction.serialize() with NO arguments, which defaults to
+      // { verifySignatures: true }. Since the tx isn't signed yet at that
+      // point, it throws "Signature verification failed."
+      // The desktop StandardWalletAdapter correctly passes
+      // { requireAllSignatures: false, verifySignatures: false }.
+      // Monkey-patch this instance so the MWA's bare serialize() call
+      // also uses safe defaults.
+      const _serialize = transaction.serialize.bind(transaction);
+      transaction.serialize = (config) =>
+        _serialize({
+          requireAllSignatures: false,
+          verifySignatures: false,
+          ...(config || {}),
+        });
 
       const signature = await sendTransaction(transaction, connection);
 
