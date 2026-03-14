@@ -8,8 +8,7 @@ export function WalletContext({ children }) {
 
   const config = useMemo(() => ({
     commitment: 'confirmed',
-    wsEndpoint: '',           // disable WebSocket — Alchemy HTTP doesn't support WS
-    disableRetryOnRateLimit: false,
+    wsEndpoint: false,
   }), []);
 
   // Pass an empty array — all modern Solana wallets (Phantom, Solflare,
