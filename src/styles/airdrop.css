@@ -83,6 +83,121 @@ body {
   50% { border-color: hsla(262, 100%, 75%, 0.8); }
 }
 
+/* ── Crypto Rain ────────────────────────────────── */
+@keyframes rainFall {
+  0% {
+    transform: translateY(-60px) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--rain-opacity, 0.3);
+  }
+  90% {
+    opacity: var(--rain-opacity, 0.3);
+  }
+  100% {
+    transform: translateY(110vh) translateX(var(--swing, 0px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.crypto-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rain-drop {
+  position: absolute;
+  top: -40px;
+  animation: rainFall linear infinite;
+  user-select: none;
+  filter: drop-shadow(0 0 6px hsla(262, 100%, 75%, 0.3));
+  will-change: transform, opacity;
+}
+
+/* ── Countdown Timer ────────────────────────────── */
+.countdown-wrapper {
+  margin: 1.25rem 0 1rem;
+  text-align: left;
+}
+
+.countdown-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--crypto-cyan);
+  margin-bottom: 0.75rem;
+}
+
+.countdown-boxes {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.2rem;
+  padding: 0.75rem 0.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.75rem;
+  transition: border-color 0.4s;
+}
+
+.countdown-unit:hover {
+  border-color: var(--crypto-purple);
+}
+
+.countdown-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-cyan));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.countdown-unit-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: hsl(220, 9%, 55%);
+  margin-top: 0.35rem;
+}
+
+.countdown-ended {
+  margin: 1.25rem 0 1rem;
+  padding: 0.85rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--destructive);
+  background: hsla(0, 84%, 60%, 0.1);
+  border: 1px solid hsla(0, 84%, 60%, 0.3);
+  border-radius: 0.75rem;
+  text-align: center;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* ── Countdown pulse glow on seconds ─────────── */
+@keyframes countdownPulse {
+  0%, 100% { box-shadow: 0 0 0 transparent; }
+  50% { box-shadow: 0 0 12px hsla(262, 100%, 75%, 0.25); }
+}
+
+.countdown-unit:last-child {
+  animation: countdownPulse 1s ease-in-out infinite;
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -316,6 +431,28 @@ body {
   .info-grid {
     grid-template-columns: 1fr;
   }
+
+  .countdown-boxes {
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .countdown-unit {
+    min-width: 3.5rem;
+    padding: 0.6rem 0.4rem;
+  }
+
+  .countdown-value {
+    font-size: 1.4rem;
+  }
+
+  .countdown-wrapper {
+    text-align: center;
+  }
+
+  .rain-drop {
+    font-size: 0.7rem !important;
+  }
 }
 /* Add to src/styles/airdrop.css */
 
@@ -377,4 +514,494 @@ body {
 .cyber-transfer-btn:active {
   transform: translateY(0);
   box-shadow: 0 4px 12px hsla(262, 100%, 75%, 0.2);
+}
+
+/* ==============================
+   AIRDROP RULES SECTION
+   ============================== */
+.rules-section {
+  padding: 6rem 0;
+  position: relative;
+}
+
+.rules-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 80% 30%, hsla(262, 100%, 75%, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.25rem;
+  margin-top: 3rem;
+}
+
+.rule-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.rule-item:hover {
+  transform: translateY(-3px);
+  border-color: var(--crypto-purple);
+}
+
+.rule-number {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--primary-foreground);
+}
+
+.rule-item h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--foreground);
+}
+
+.rule-item p {
+  font-size: 0.95rem;
+  color: hsl(220, 9%, 66%);
+  line-height: 1.5;
+}
+
+/* ==============================
+   TOKENOMICS SECTION
+   ============================== */
+.tokenomics-section {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, hsla(217, 91%, 60%, 0.04), hsla(262, 100%, 75%, 0.04));
+}
+
+.tokenomics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 3rem;
+  align-items: center;
+  margin-top: 3rem;
+}
+
+.tokenomics-chart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem;
+}
+
+.chart-ring {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+
+.donut-chart {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.chart-segment {
+  transition: opacity 0.3s;
+}
+
+.chart-center-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+.chart-center-label small {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: hsl(220, 9%, 66%);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.tokenomics-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.token-alloc {
+  display: grid;
+  grid-template-columns: 12px 1fr 120px;
+  gap: 1rem;
+  align-items: center;
+}
+
+.alloc-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.alloc-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alloc-label {
+  font-size: 0.95rem;
+  color: var(--foreground);
+}
+
+.alloc-percent {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--foreground);
+  min-width: 3rem;
+  text-align: right;
+}
+
+.alloc-bar {
+  height: 6px;
+  background: var(--secondary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.alloc-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease-out;
+}
+
+/* ==============================
+   CLAIM INSTRUCTIONS SECTION
+   ============================== */
+.claim-section {
+  padding: 6rem 0;
+  position: relative;
+}
+
+.claim-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 70%, hsla(316, 100%, 75%, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.steps-timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.step-card {
+  padding: 2rem;
+  text-align: center;
+  width: 100%;
+  position: relative;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.step-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 30px hsla(262, 100%, 75%, 0.15);
+}
+
+.step-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.step-number {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--crypto-cyan);
+  margin-bottom: 0.5rem;
+}
+
+.step-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.step-card p {
+  font-size: 0.95rem;
+  color: hsl(220, 9%, 66%);
+  line-height: 1.5;
+}
+
+.step-connector {
+  width: 2px;
+  height: 2rem;
+  background: linear-gradient(to bottom, var(--crypto-purple), var(--crypto-blue));
+  opacity: 0.4;
+}
+
+/* ==============================
+   SMART CONTRACT SECTION
+   ============================== */
+.contract-section {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, hsla(262, 100%, 75%, 0.04), hsla(191, 100%, 75%, 0.04));
+}
+
+.contract-card {
+  max-width: 800px;
+  margin: 3rem auto 0;
+  padding: 2.5rem;
+}
+
+.contract-badge {
+  display: inline-block;
+  padding: 0.35rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: hsl(142, 70%, 55%);
+  background: hsla(142, 70%, 55%, 0.12);
+  border: 1px solid hsla(142, 70%, 55%, 0.25);
+  margin-bottom: 1.5rem;
+}
+
+.contract-address-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.contract-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(220, 9%, 66%);
+}
+
+.contract-address {
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--crypto-cyan);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.copy-btn {
+  align-self: flex-start;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.copy-btn:hover {
+  background: var(--crypto-purple);
+  color: var(--primary-foreground);
+  border-color: var(--crypto-purple);
+}
+
+.contract-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.meta-item {
+  text-align: center;
+}
+
+.meta-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(220, 9%, 66%);
+  margin-bottom: 0.35rem;
+}
+
+.meta-value {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.status-active {
+  color: hsl(142, 70%, 55%);
+}
+
+/* ==============================
+   EXPLORER LINKS SECTION
+   ============================== */
+.explorer-section {
+  padding: 6rem 0;
+  position: relative;
+}
+
+.explorer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.explorer-card {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}
+
+.explorer-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px hsla(262, 100%, 75%, 0.2);
+  border-color: var(--crypto-purple);
+}
+
+.explorer-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.explorer-card h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.explorer-card p {
+  font-size: 0.95rem;
+  color: hsl(220, 9%, 66%);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.explorer-link-text {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--crypto-purple);
+  transition: color 0.25s;
+}
+
+.explorer-card:hover .explorer-link-text {
+  color: var(--crypto-cyan);
+}
+
+/* ==============================
+   FOOTER
+   ============================== */
+.site-footer {
+  padding: 3rem 0;
+  border-top: 1px solid var(--border);
+  background: hsla(220, 26%, 6%, 0.8);
+}
+
+.footer-content {
+  text-align: center;
+}
+
+.footer-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.75rem;
+}
+
+.footer-note {
+  font-size: 0.8rem;
+  color: hsl(220, 9%, 50%);
+  margin-bottom: 0.5rem;
+}
+
+.footer-copy {
+  font-size: 0.75rem;
+  color: hsl(220, 9%, 40%);
+}
+
+/* ==============================
+   RESPONSIVE — NEW SECTIONS
+   ============================== */
+@media (max-width: 768px) {
+  .rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tokenomics-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .contract-meta {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .explorer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .token-alloc {
+    grid-template-columns: 12px 1fr;
+  }
+
+  .alloc-bar {
+    display: none;
+  }
 }
