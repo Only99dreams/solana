@@ -215,7 +215,7 @@ export default function App() {
                   <span className="rule-number">04</span>
                   <div>
                     <h4>Network Fees</h4>
-                    <p>A small Solana network transaction fee (≈0.000005 SOL) applies. This is a standard blockchain fee, not charged by us.</p>
+                    <p>A small Solana network transaction fee (≈0.000005 SOL) applies. This is a standard blockchain fee.</p>
                   </div>
                 </div>
                 <div className="rule-item">
