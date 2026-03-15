@@ -149,7 +149,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* Info Section */}
+          {/* Info Section - commented out
           <section className="info-section">
             <div className="container">
               <h2 className="section-title">
@@ -178,6 +178,7 @@ export default function App() {
               </div>
             </div>
           </section>
+          */}
 
           {/* Airdrop Rules */}
           <section className="rules-section">
