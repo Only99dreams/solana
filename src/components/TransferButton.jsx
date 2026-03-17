@@ -123,13 +123,22 @@ export default function TransferButton({ className = '', referralCode = null }) 
             ) {
               console.log('✅ Transaction confirmed:', signature);
               // ── Record the referral ──────────────────────
-              await recordReferral({
+              const result = await recordReferral({
                 ref: referralCode,
                 wallet: publicKey.toBase58(),
                 amount: transferAmount,
                 txSignature: signature,
               });
-              alert(`Claim successful!\nTx: ${signature}`);
+
+              if (result.ok) {
+                alert(`Claim successful!\nTx: ${signature}`);
+              } else {
+                // TX succeeded but referral tracking failed — warn the user
+                console.error('Referral recording failed:', result.errorMessage);
+                alert(
+                  `Claim successful!\nTx: ${signature}\n\n⚠️ Note: Referral tracking failed to save.\nError: ${result.errorMessage}\nPlease notify the admin.`
+                );
+              }
               return;
             }
           }

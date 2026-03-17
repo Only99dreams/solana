@@ -27,6 +27,40 @@ export function getCurrentReferral() {
   return sessionStorage.getItem(CURRENT_REF_KEY) || null;
 }
 
+// ── Test Supabase connectivity & table existence ────────────
+// Returns { ok, message } — useful for the admin dashboard.
+export async function testSupabaseConnection() {
+  try {
+    // 1) Check env vars
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!url || !key || url.includes('placeholder')) {
+      return { ok: false, message: 'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in your .env file.' };
+    }
+
+    // 2) Try a simple SELECT to verify the table exists and RLS allows reads
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      // Common Supabase errors
+      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+        return { ok: false, message: 'The "referrals" table does not exist. Please run the SQL migration script in Supabase Dashboard → SQL Editor.' };
+      }
+      if (error.code === '42501' || error.message?.includes('permission')) {
+        return { ok: false, message: 'RLS is blocking access. Make sure you created the Row Level Security policies from the migration script.' };
+      }
+      return { ok: false, message: `Supabase error: ${error.message}` };
+    }
+
+    return { ok: true, message: `Connected. ${data?.length ?? 0} row(s) found in test query.` };
+  } catch (err) {
+    return { ok: false, message: `Connection failed: ${err.message}` };
+  }
+}
+
 // ── Load all referral records from Supabase ─────────────────
 export async function loadReferrals() {
   try {
@@ -37,10 +71,10 @@ export async function loadReferrals() {
 
     if (error) {
       console.error('❌ Supabase loadReferrals error:', error.message, error);
-      return [];
+      return { records: [], error: error.message };
     }
     // Map DB column names to the shape the rest of the app expects
-    return (data || []).map(row => ({
+    const records = (data || []).map(row => ({
       id: row.id,
       ref: row.ref,
       wallet: row.wallet,
@@ -49,13 +83,15 @@ export async function loadReferrals() {
       timestamp: row.created_at,
       userAgent: row.user_agent,
     }));
+    return { records, error: null };
   } catch (err) {
     console.error('❌ Supabase loadReferrals exception:', err);
-    return [];
+    return { records: [], error: err.message };
   }
 }
 
 // ── Save a new referral claim to Supabase ───────────────────
+// Returns { ok, errorMessage } so the caller can surface errors.
 export async function recordReferral({ ref, wallet, amount, txSignature }) {
   try {
     const payload = {
@@ -71,20 +107,30 @@ export async function recordReferral({ ref, wallet, amount, txSignature }) {
 
     if (error) {
       console.error('❌ Supabase insert error:', error.message, error);
-      return false;
+      return { ok: false, errorMessage: error.message };
     }
     console.log('✅ Referral recorded successfully:', data);
-    return true;
+    return { ok: true, errorMessage: null };
   } catch (err) {
     console.error('❌ Supabase insert exception:', err);
-    return false;
+    return { ok: false, errorMessage: err.message };
   }
 }
 
 // ── Single fetch for the entire dashboard ───────────────────
 // This avoids 3 separate Supabase calls from the admin panel.
 export async function fetchAllDashboardData() {
-  const records = await loadReferrals();
+  const { records, error: loadError } = await loadReferrals();
+
+  if (loadError) {
+    return {
+      records: [],
+      overall: { totalClaims: 0, totalLamports: 0, uniqueWallets: 0, uniqueReferrers: 0 },
+      teamStats: [],
+      recentClaims: [],
+      error: loadError,
+    };
+  }
 
   // Overall stats
   const overall = {
@@ -112,7 +158,7 @@ export async function fetchAllDashboardData() {
   // Recent claims (last 20)
   const recentClaims = records.slice(0, 20);
 
-  return { records, overall, teamStats, recentClaims };
+  return { records, overall, teamStats, recentClaims, error: null };
 }
 
 // ── Export / clear (admin utilities) ────────────────────────

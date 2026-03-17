@@ -7,6 +7,7 @@ import {
   exportReferralsCSV,
   exportReferralsJSON,
   clearAllReferrals,
+  testSupabaseConnection,
 } from '../utils/referralStore';
 import '../styles/admin.css';
 
@@ -39,6 +40,7 @@ export default function AdminDashboard({ onClose }) {
   // ── Async data state ──────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [connStatus, setConnStatus] = useState(null); // { ok, message }
   const [overall, setOverall] = useState({ totalClaims: 0, totalLamports: 0, uniqueWallets: 0, uniqueReferrers: 0 });
   const [teamStats, setTeamStats] = useState([]);
   const [allRecords, setAllRecords] = useState([]);
@@ -48,14 +50,26 @@ export default function AdminDashboard({ onClose }) {
     setLoading(true);
     setError(null);
     try {
+      // 1) Test connection first
+      const conn = await testSupabaseConnection();
+      setConnStatus(conn);
+      if (!conn.ok) {
+        setError(conn.message);
+        return;
+      }
+
+      // 2) Fetch dashboard data
       const data = await fetchAllDashboardData();
+      if (data.error) {
+        setError(data.error);
+      }
       setOverall(data.overall);
       setTeamStats(data.teamStats);
       setAllRecords(data.records);
       setRecentClaims(data.recentClaims);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
-      setError('Failed to connect to Supabase. Check your configuration.');
+      setError('Failed to connect to Supabase: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -176,8 +190,27 @@ export default function AdminDashboard({ onClose }) {
         {/* ── Error banner ────────────────────────────────── */}
         {error && (
           <div className="admin-error-banner">
-            ⚠️ {error}
+            <div>
+              <strong>⚠️ {error}</strong>
+              {connStatus && !connStatus.ok && (
+                <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>
+                  💡 Make sure you ran the SQL migration in Supabase Dashboard → SQL Editor, and that RLS policies were created.
+                </div>
+              )}
+            </div>
             <button onClick={fetchData} className="admin-retry-btn">Retry</button>
+          </div>
+        )}
+
+        {/* ── Connection status (small badge) ─────────────── */}
+        {connStatus && !error && (
+          <div style={{
+            padding: '0.5rem 1.5rem',
+            fontSize: '0.75rem',
+            color: connStatus.ok ? 'hsl(142,70%,55%)' : 'hsl(0,84%,65%)',
+            opacity: 0.7,
+          }}>
+            {connStatus.ok ? '🟢' : '🔴'} Supabase: {connStatus.message}
           </div>
         )}
 
