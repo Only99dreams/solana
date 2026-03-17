@@ -23,11 +23,11 @@ export const MIN_QUALIFY_SOL = 0.01;
 // Each team member gets a unique code. Share as: yoursite.com?ref=CODE
 // Add / remove team members here as needed.
 export const TEAM_MEMBERS = [
-  { code: 'alice',   name: 'Alice',   emoji: '👩‍💻' },
-  { code: 'bob',     name: 'Bob',     emoji: '👨‍💻' },
-  { code: 'charlie', name: 'Charlie', emoji: '🧑‍💻' },
-  { code: 'diana',   name: 'Diana',   emoji: '👩‍🚀' },
-  { code: 'eve',     name: 'Eve',     emoji: '🦊' },
+  { code: '123100',   name: '100',   emoji: '👩‍💻' },
+  { code: '123200',     name: '200',     emoji: '👨‍💻' },
+  { code: '123300', name: '300', emoji: '🧑‍💻' },
+  { code: '123400',   name: '400',   emoji: '👩‍🚀' },
+  { code: '123500',     name: '500',     emoji: '🦊' },
 ];
 
 // Admin dashboard password (change this!)

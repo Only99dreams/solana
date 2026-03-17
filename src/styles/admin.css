@@ -1,41 +1,54 @@
 /* src/styles/admin.css */
-/* ==============================
-   ADMIN DASHBOARD — OVERLAY + LOGIN
-   ============================== */
+/* ══════════════════════════════════════════════════════════
+   ADMIN DASHBOARD — Premium Dark UI
+   ══════════════════════════════════════════════════════════ */
 
+/* ── Overlay ────────────────────────────────────── */
 .admin-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: hsla(220, 26%, 4%, 0.92);
-  backdrop-filter: blur(12px);
+  background: hsla(220, 30%, 3%, 0.95);
+  backdrop-filter: blur(20px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 1rem;
+  padding: 2rem 1rem;
   overflow-y: auto;
 }
 
-/* ── Login card ─────────────────────────────────── */
+/* ══════════════════════════════════════════════════
+   LOGIN CARD
+   ══════════════════════════════════════════════════ */
 .admin-login {
   position: relative;
-  max-width: 400px;
+  max-width: 380px;
   width: 100%;
   padding: 2.5rem;
   text-align: center;
+  margin-top: 15vh;
+  background: hsl(220, 26%, 10%);
+  border: 1px solid hsl(220, 26%, 18%);
+  border-radius: 1.25rem;
+}
+
+.admin-login-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
 }
 
 .admin-login h2 {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
   color: var(--foreground);
 }
 
 .admin-login p {
-  color: hsl(220, 9%, 60%);
-  font-size: 0.9rem;
+  color: hsl(220, 9%, 50%);
+  font-size: 0.85rem;
   margin-bottom: 1.5rem;
+  line-height: 1.5;
 }
 
 .admin-login-form {
@@ -46,18 +59,19 @@
 
 .admin-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
-  background: var(--secondary);
+  padding: 0.8rem 1rem;
+  border-radius: 0.6rem;
+  border: 1px solid hsl(220, 26%, 20%);
+  background: hsl(220, 26%, 7%);
   color: var(--foreground);
-  font-size: 1rem;
+  font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.25s;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .admin-input:focus {
   border-color: var(--crypto-purple);
+  box-shadow: 0 0 0 3px hsla(262, 100%, 75%, 0.15);
 }
 
 .admin-error {
@@ -67,32 +81,33 @@
 }
 
 .admin-login-btn {
-  padding: 0.75rem;
-  border-radius: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 0.6rem;
   border: none;
   background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-blue));
-  color: var(--primary-foreground);
-  font-size: 1rem;
+  color: white;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.25s;
+  transition: opacity 0.25s, transform 0.2s;
 }
 
 .admin-login-btn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 /* ── Close button ───────────────────────────────── */
 .admin-close-btn {
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  color: var(--foreground);
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
+  background: hsl(220, 26%, 14%);
+  border: 1px solid hsl(220, 26%, 22%);
+  color: hsl(220, 9%, 60%);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,33 +117,54 @@
 .admin-close-btn:hover {
   background: var(--destructive);
   border-color: var(--destructive);
+  color: white;
 }
 
-/* ==============================
-   MAIN DASHBOARD PANEL
-   ============================== */
+/* ══════════════════════════════════════════════════
+   MAIN DASHBOARD
+   ══════════════════════════════════════════════════ */
 .admin-dashboard {
-  position: relative;
-  max-width: 1000px;
+  max-width: 1100px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 2rem;
+  margin-top: 1rem;
+  background: hsl(220, 26%, 8%);
+  border: 1px solid hsl(220, 26%, 14%);
+  border-radius: 1.25rem;
+  overflow: hidden;
 }
 
+/* ── Header ─────────────────────────────────────── */
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, hsla(262, 100%, 75%, 0.08), hsla(217, 91%, 60%, 0.08));
+  border-bottom: 1px solid hsl(220, 26%, 14%);
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .admin-header h2 {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--foreground);
+  margin: 0;
+}
+
+.admin-header-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2rem;
+  background: hsla(142, 70%, 55%, 0.12);
+  color: hsl(142, 70%, 55%);
+  border: 1px solid hsla(142, 70%, 55%, 0.2);
 }
 
 .admin-header-actions {
@@ -137,185 +173,412 @@
   align-items: center;
 }
 
-/* ── Stat cards ─────────────────────────────────── */
-.admin-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.admin-stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 1.25rem 1rem;
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  text-align: center;
-  transition: border-color 0.3s;
-}
-
-.admin-stat-card:hover {
-  border-color: var(--crypto-purple);
-}
-
-.admin-stat-icon {
-  font-size: 1.5rem;
-}
-
-.admin-stat-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--crypto-purple), var(--crypto-cyan));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.admin-stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: hsl(220, 9%, 55%);
-}
-
-/* ── Sections ───────────────────────────────────── */
-.admin-section {
-  margin-bottom: 2rem;
-}
-
-.admin-section h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
+.admin-refresh-btn {
+  background: hsl(220, 26%, 14%);
+  border: 1px solid hsl(220, 26%, 22%);
   color: var(--foreground);
-  margin-bottom: 0.5rem;
-}
-
-.admin-hint {
-  font-size: 0.85rem;
-  color: hsl(220, 9%, 55%);
-  margin-bottom: 1rem;
-}
-
-.admin-hint code {
-  color: var(--crypto-cyan);
-  background: var(--secondary);
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
-  font-size: 0.8rem;
-}
-
-.admin-empty {
-  color: hsl(220, 9%, 45%);
-  font-style: italic;
-  padding: 1.5rem;
-  text-align: center;
-}
-
-/* ── Team referral links ────────────────────────── */
-.admin-links-grid {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-refresh-btn:hover {
+  border-color: var(--crypto-purple);
+  background: hsla(262, 100%, 75%, 0.1);
+}
+
+.admin-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Error banner ───────────────────────────────── */
+.admin-error-banner {
+  margin: 1rem 1.5rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.6rem;
+  background: hsla(0, 84%, 60%, 0.1);
+  border: 1px solid hsla(0, 84%, 60%, 0.25);
+  color: hsl(0, 84%, 70%);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
 }
 
-.admin-link-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 1rem;
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  transition: border-color 0.25s;
-}
-
-.admin-link-card:hover {
-  border-color: var(--crypto-purple);
-}
-
-.admin-link-emoji {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.admin-link-name {
-  font-weight: 600;
-  color: var(--foreground);
-  min-width: 5rem;
-}
-
-.admin-link-url {
-  flex: 1;
-  font-family: 'Courier New', monospace;
+.admin-retry-btn {
+  background: hsla(0, 84%, 60%, 0.2);
+  border: 1px solid hsla(0, 84%, 60%, 0.3);
+  color: hsl(0, 84%, 70%);
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.4rem;
   font-size: 0.75rem;
-  color: var(--crypto-cyan);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-retry-btn:hover {
+  background: hsla(0, 84%, 60%, 0.3);
+}
+
+/* ══════════════════════════════════════════════════
+   STAT CARDS
+   ══════════════════════════════════════════════════ */
+.admin-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.admin-stat-card {
+  padding: 1rem 1.1rem;
+  border-radius: 0.75rem;
+  background: hsl(220, 26%, 10%);
+  border: 1px solid hsl(220, 26%, 16%);
+  transition: border-color 0.3s, transform 0.2s;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.admin-stat-purple { border-left: 3px solid var(--crypto-purple); }
+.admin-stat-blue   { border-left: 3px solid var(--crypto-blue); }
+.admin-stat-cyan   { border-left: 3px solid var(--crypto-cyan); }
+.admin-stat-green  { border-left: 3px solid hsl(142, 70%, 55%); }
+
+.admin-stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.admin-stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(220, 9%, 50%);
+}
+
+.admin-stat-emoji {
+  font-size: 1.2rem;
+  opacity: 0.7;
+}
+
+.admin-stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--foreground);
+  line-height: 1;
+}
+
+/* ══════════════════════════════════════════════════
+   TABS
+   ══════════════════════════════════════════════════ */
+.admin-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid hsl(220, 26%, 14%);
+  overflow-x: auto;
+}
+
+.admin-tab {
+  padding: 0.75rem 1.1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: hsl(220, 9%, 45%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
   white-space: nowrap;
 }
 
-.admin-copy-btn {
-  flex-shrink: 0;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
+.admin-tab:hover {
+  color: hsl(220, 9%, 70%);
+}
+
+.admin-tab-active {
+  color: var(--crypto-purple);
+  border-bottom-color: var(--crypto-purple);
+}
+
+/* ── Tab content area ───────────────────────────── */
+.admin-tab-content {
+  padding: 1.25rem 1.5rem;
+  min-height: 300px;
+}
+
+/* ══════════════════════════════════════════════════
+   OVERVIEW TAB — Two-column grid
+   ══════════════════════════════════════════════════ */
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.admin-card {
+  background: hsl(220, 26%, 10%);
+  border: 1px solid hsl(220, 26%, 16%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.admin-card-title {
   font-size: 0.9rem;
-  transition: all 0.25s;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid hsl(220, 26%, 16%);
 }
 
-.admin-copy-btn:hover {
-  background: var(--crypto-purple);
-  border-color: var(--crypto-purple);
+.admin-empty-text {
+  color: hsl(220, 9%, 40%);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 2rem 0;
 }
 
-/* ── Table ──────────────────────────────────────── */
+/* Top referrers list */
+.admin-top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-top-item {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0 0.5rem;
+  align-items: center;
+}
+
+.admin-top-rank {
+  grid-row: 1 / 3;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.admin-top-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.admin-top-count {
+  font-size: 0.75rem;
+  color: hsl(220, 9%, 50%);
+}
+
+.admin-top-bar {
+  grid-column: 2 / 4;
+  height: 4px;
+  background: hsl(220, 26%, 14%);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.admin-top-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--crypto-purple), var(--crypto-blue));
+  border-radius: 2px;
+  transition: width 0.6s ease-out;
+}
+
+/* Activity feed */
+.admin-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.admin-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid hsl(220, 26%, 13%);
+}
+
+.admin-activity-item:last-child {
+  border-bottom: none;
+}
+
+.admin-activity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(142, 70%, 55%);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px hsla(142, 70%, 55%, 0.4);
+}
+
+.admin-activity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-activity-wallet {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--crypto-cyan);
+  margin-right: 0.35rem;
+}
+
+.admin-activity-via {
+  font-size: 0.75rem;
+  color: hsl(220, 9%, 45%);
+}
+
+.admin-activity-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.admin-activity-amount {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.admin-activity-time {
+  font-size: 0.7rem;
+  color: hsl(220, 9%, 40%);
+}
+
+/* ══════════════════════════════════════════════════
+   EMPTY STATE
+   ══════════════════════════════════════════════════ */
+.admin-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.admin-empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.admin-empty-state p {
+  color: hsl(220, 9%, 50%);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.admin-empty-sub {
+  font-size: 0.8rem !important;
+  color: hsl(220, 9%, 38%) !important;
+  margin-top: 0.25rem !important;
+}
+
+/* ══════════════════════════════════════════════════
+   TABLE
+   ══════════════════════════════════════════════════ */
 .admin-table-wrapper {
   overflow-x: auto;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  border: 1px solid hsl(220, 26%, 14%);
+  background: hsl(220, 26%, 9%);
 }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .admin-table thead {
-  background: var(--secondary);
+  background: hsl(220, 26%, 11%);
 }
 
 .admin-table th {
   text-align: left;
-  padding: 0.65rem 0.75rem;
+  padding: 0.7rem 0.85rem;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: hsl(220, 9%, 55%);
-  border-bottom: 1px solid var(--border);
+  color: hsl(220, 9%, 45%);
+  border-bottom: 1px solid hsl(220, 26%, 16%);
 }
 
 .admin-table td {
-  padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid hsl(220, 26%, 12%);
   color: var(--foreground);
 }
 
-.admin-table tbody tr:hover {
-  background: hsla(262, 100%, 75%, 0.05);
+.admin-table-row {
+  transition: background 0.15s;
 }
 
-.admin-rank {
+.admin-table-row:hover {
+  background: hsla(262, 100%, 75%, 0.04);
+}
+
+.admin-rank-cell {
   text-align: center;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  width: 3rem;
+}
+
+.admin-member-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-member-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.admin-member-code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: hsl(220, 9%, 40%);
+}
+
+.admin-claims-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.8rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 2rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  background: hsla(262, 100%, 75%, 0.12);
+  color: var(--crypto-purple);
+}
+
+.admin-sol-cell {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-date-cell {
+  color: hsl(220, 9%, 50%);
+  font-size: 0.75rem;
 }
 
 .admin-mono {
@@ -329,101 +592,247 @@
   font-size: 0.8rem;
   color: var(--crypto-purple);
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 .admin-tx-link:hover {
-  text-decoration: underline;
   color: var(--crypto-cyan);
 }
 
-.admin-detail-btn {
+.admin-view-btn {
   background: none;
-  border: 1px solid var(--crypto-purple);
-  color: var(--crypto-purple);
-  padding: 0.25rem 0.6rem;
-  border-radius: 0.35rem;
-  font-size: 0.75rem;
+  border: 1px solid hsl(220, 26%, 22%);
+  color: hsl(220, 9%, 65%);
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
 }
 
-.admin-detail-btn:hover {
+.admin-view-btn:hover {
   background: var(--crypto-purple);
-  color: var(--primary-foreground);
+  border-color: var(--crypto-purple);
+  color: white;
 }
 
-/* ── Detail header ──────────────────────────────── */
+/* ── Detail panel ───────────────────────────────── */
+.admin-detail-panel {
+  animation: fadeSlideIn 0.25s ease-out;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .admin-detail-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
 }
 
-.admin-detail-section {
-  padding: 1.25rem;
-  background: hsla(262, 100%, 75%, 0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: 0.75rem;
-}
-
-/* ── Action buttons ─────────────────────────────── */
-.admin-action-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
-  background: var(--secondary);
+.admin-detail-title {
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--foreground);
+  margin: 0;
+}
+
+.admin-detail-subtitle {
   font-size: 0.8rem;
+  color: hsl(220, 9%, 50%);
+  margin-top: 0.2rem;
+  display: block;
+}
+
+.admin-back-btn {
+  background: hsl(220, 26%, 14%);
+  border: 1px solid hsl(220, 26%, 22%);
+  color: hsl(220, 9%, 65%);
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-.admin-action-btn:hover {
+.admin-back-btn:hover {
   border-color: var(--crypto-purple);
-  background: hsla(262, 100%, 75%, 0.1);
+  color: var(--crypto-purple);
+}
+
+/* ══════════════════════════════════════════════════
+   TEAM LINKS TAB
+   ══════════════════════════════════════════════════ */
+.admin-links-hint {
+  font-size: 0.85rem;
+  color: hsl(220, 9%, 45%);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.admin-links-hint code {
+  color: var(--crypto-cyan);
+  background: hsl(220, 26%, 14%);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.admin-links-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-link-card {
+  background: hsl(220, 26%, 10%);
+  border: 1px solid hsl(220, 26%, 16%);
+  border-radius: 0.6rem;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s;
+}
+
+.admin-link-card:hover {
+  border-color: hsl(220, 26%, 24%);
+}
+
+.admin-link-top {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+}
+
+.admin-link-avatar {
+  font-size: 1.4rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(220, 26%, 14%);
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.admin-link-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-link-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--foreground);
+}
+
+.admin-link-stats {
+  font-size: 0.72rem;
+  color: hsl(220, 9%, 45%);
+}
+
+.admin-link-url-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-link-url {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: hsl(220, 9%, 50%);
+  background: hsl(220, 26%, 7%);
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.4rem;
+  border: 1px solid hsl(220, 26%, 14%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-copy-btn {
+  flex-shrink: 0;
+  background: hsl(220, 26%, 14%);
+  border: 1px solid hsl(220, 26%, 22%);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(220, 9%, 65%);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.admin-copy-btn:hover {
+  background: var(--crypto-purple);
+  border-color: var(--crypto-purple);
+  color: white;
+}
+
+/* ══════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════ */
+.admin-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid hsl(220, 26%, 14%);
+  background: hsl(220, 26%, 7%);
+}
+
+.admin-footer-left {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.admin-export-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.4rem;
+  border: 1px solid hsl(220, 26%, 22%);
+  background: hsl(220, 26%, 12%);
+  color: hsl(220, 9%, 65%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-export-btn:hover {
+  border-color: var(--crypto-purple);
+  color: var(--crypto-purple);
 }
 
 .admin-danger-btn {
-  border-color: var(--destructive);
-  color: var(--destructive);
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.4rem;
+  border: 1px solid hsla(0, 84%, 60%, 0.3);
+  background: hsla(0, 84%, 60%, 0.08);
+  color: hsl(0, 84%, 65%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .admin-danger-btn:hover {
-  background: hsla(0, 84%, 60%, 0.15);
-  border-color: var(--destructive);
+  background: hsla(0, 84%, 60%, 0.18);
+  border-color: hsla(0, 84%, 60%, 0.5);
 }
 
-.admin-footer-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-}
-
-/* ── Referral badge (shown on main page) ────────── */
-.referral-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.8rem;
-  border-radius: 2rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: hsla(262, 100%, 75%, 0.12);
-  border: 1px solid hsla(262, 100%, 75%, 0.25);
-  color: var(--crypto-purple);
-  margin-bottom: 0.5rem;
-}
-
-/* ── Admin trigger button (footer) ──────────────── */
+/* ── Admin trigger button (footer of main page) ── */
 .admin-trigger-btn {
   background: none;
   border: none;
-  color: hsl(220, 9%, 30%);
+  color: hsl(220, 9%, 25%);
   font-size: 0.7rem;
   cursor: pointer;
   margin-top: 0.5rem;
@@ -434,14 +843,47 @@
   color: var(--crypto-purple);
 }
 
-/* ── Responsive ─────────────────────────────────── */
+/* ══════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .admin-dashboard {
-    padding: 1.25rem;
+  .admin-overlay {
+    padding: 0.5rem;
   }
 
-  .admin-stats-grid {
+  .admin-dashboard {
+    margin-top: 0;
+    border-radius: 0.75rem;
+  }
+
+  .admin-header {
+    padding: 1rem;
+  }
+
+  .admin-stats-row {
     grid-template-columns: repeat(2, 1fr);
+    padding: 1rem;
+  }
+
+  .admin-stat-value {
+    font-size: 1.4rem;
+  }
+
+  .admin-tabs {
+    padding: 0 1rem;
+  }
+
+  .admin-tab {
+    padding: 0.65rem 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .admin-tab-content {
+    padding: 1rem;
+  }
+
+  .admin-overview-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-link-url {
@@ -449,11 +891,17 @@
   }
 
   .admin-table {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
 
   .admin-table th,
   .admin-table td {
-    padding: 0.45rem 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .admin-footer {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 }

@@ -29,72 +29,90 @@ export function getCurrentReferral() {
 
 // ── Load all referral records from Supabase ─────────────────
 export async function loadReferrals() {
-  const { data, error } = await supabase
-    .from('referrals')
-    .select('*')
-    .order('created_at', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Failed to load referrals:', error.message);
+    if (error) {
+      console.error('❌ Supabase loadReferrals error:', error.message, error);
+      return [];
+    }
+    // Map DB column names to the shape the rest of the app expects
+    return (data || []).map(row => ({
+      id: row.id,
+      ref: row.ref,
+      wallet: row.wallet,
+      amount: Number(row.amount) || 0,
+      txSignature: row.tx_signature,
+      timestamp: row.created_at,
+      userAgent: row.user_agent,
+    }));
+  } catch (err) {
+    console.error('❌ Supabase loadReferrals exception:', err);
     return [];
   }
-  // Map DB column names to the shape the rest of the app expects
-  return (data || []).map(row => ({
-    id: row.id,
-    ref: row.ref,
-    wallet: row.wallet,
-    amount: row.amount,
-    txSignature: row.tx_signature,
-    timestamp: row.created_at,
-    userAgent: row.user_agent,
-  }));
 }
 
 // ── Save a new referral claim to Supabase ───────────────────
 export async function recordReferral({ ref, wallet, amount, txSignature }) {
-  const { error } = await supabase.from('referrals').insert({
-    ref: ref || 'direct',
-    wallet,
-    amount,
-    tx_signature: txSignature,
-    user_agent: navigator.userAgent,
-  });
+  try {
+    const payload = {
+      ref: ref || 'direct',
+      wallet,
+      amount,
+      tx_signature: txSignature,
+      user_agent: navigator.userAgent,
+    };
+    console.log('📝 Recording referral to Supabase:', payload);
 
-  if (error) {
-    // Duplicate tx_signature will fail thanks to unique index — that's fine
-    console.error('Failed to record referral:', error.message);
+    const { data, error } = await supabase.from('referrals').insert(payload).select();
+
+    if (error) {
+      console.error('❌ Supabase insert error:', error.message, error);
+      return false;
+    }
+    console.log('✅ Referral recorded successfully:', data);
+    return true;
+  } catch (err) {
+    console.error('❌ Supabase insert exception:', err);
+    return false;
   }
 }
 
-// ── Analytics helpers (used by the admin dashboard) ─────────
-// All now async since they hit Supabase.
-
-/** Summary stats per team member */
-export async function getTeamStats() {
+// ── Single fetch for the entire dashboard ───────────────────
+// This avoids 3 separate Supabase calls from the admin panel.
+export async function fetchAllDashboardData() {
   const records = await loadReferrals();
+
+  // Overall stats
+  const overall = {
+    totalClaims: records.length,
+    totalLamports: records.reduce((sum, r) => sum + (r.amount || 0), 0),
+    uniqueWallets: new Set(records.map(r => r.wallet)).size,
+    uniqueReferrers: new Set(records.filter(r => r.ref !== 'direct').map(r => r.ref)).size,
+  };
+
+  // Group by team member
   const grouped = {};
   for (const r of records) {
     if (!grouped[r.ref]) grouped[r.ref] = [];
     grouped[r.ref].push(r);
   }
-  return Object.entries(grouped).map(([ref, claims]) => ({
+
+  const teamStats = Object.entries(grouped).map(([ref, claims]) => ({
     ref,
     totalClaims: claims.length,
     totalLamports: claims.reduce((sum, c) => sum + (c.amount || 0), 0),
-    lastClaim: claims.at(-1)?.timestamp || null,
+    lastClaim: claims[0]?.timestamp || null, // already sorted desc
     wallets: claims.map(c => c.wallet),
   }));
-}
 
-/** Overall totals */
-export async function getOverallStats() {
-  const records = await loadReferrals();
-  return {
-    totalClaims: records.length,
-    totalLamports: records.reduce((sum, r) => sum + (r.amount || 0), 0),
-    uniqueWallets: new Set(records.map(r => r.wallet)).size,
-    uniqueReferrers: new Set(records.map(r => r.ref)).size,
-  };
+  // Recent claims (last 20)
+  const recentClaims = records.slice(0, 20);
+
+  return { records, overall, teamStats, recentClaims };
 }
 
 // ── Export / clear (admin utilities) ────────────────────────

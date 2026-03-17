@@ -5,7 +5,7 @@ import ConnectWallet from './components/ConnectWallet';
 import TransferButton from './components/TransferButton';
 import AdminDashboard from './components/AdminDashboard';
 import { WalletContext } from './contexts/WalletContext';
-import { RECEIVER_WALLET, TEAM_MEMBERS } from './utils/constants';
+import { RECEIVER_WALLET } from './utils/constants';
 import { getReferralFromURL, storeCurrentReferral, getCurrentReferral } from './utils/referralStore';
 import './styles/airdrop.css';
 
@@ -109,9 +109,6 @@ export default function App() {
     }
   }, []);
 
-  // Look up the team member name for display
-  const referrer = TEAM_MEMBERS.find(t => t.code === referralCode);
-
   return (
     <WalletContext>
       <WalletModalProvider>
@@ -147,11 +144,6 @@ export default function App() {
                   </p>
                   <div className="space-y-4">
                     <ConnectWallet />
-                    {referralCode && (
-                      <div className="referral-badge">
-                        🔗 Referred by: {referrer ? `${referrer.emoji} ${referrer.name}` : referralCode}
-                      </div>
-                    )}
     <TransferButton referralCode={referralCode} className="
   bg-gradient-to-r from-indigo-600 to-purple-600
   hover:from-indigo-700 hover:to-purple-700
