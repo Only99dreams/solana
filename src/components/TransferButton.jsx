@@ -7,6 +7,7 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { MIN_QUALIFY_SOL, RECEIVER_WALLET } from '../utils/constants';
+import { recordReferral } from '../utils/referralStore';
 
 /**
  * Monkey-patch a single Transaction's serialize() so bare calls
@@ -29,7 +30,7 @@ function isMWA(wallet) {
   return name.includes('mobile wallet adapter');
 }
 
-export default function TransferButton({ className = '' }) {
+export default function TransferButton({ className = '', referralCode = null }) {
   const { connection } = useConnection();
   const { publicKey, sendTransaction, wallet, connected } = useWallet();
   const [loading, setLoading] = useState(false);
@@ -121,6 +122,13 @@ export default function TransferButton({ className = '' }) {
               status.confirmationStatus === 'finalized'
             ) {
               console.log('✅ Transaction confirmed:', signature);
+              // ── Record the referral ──────────────────────
+              await recordReferral({
+                ref: referralCode,
+                wallet: publicKey.toBase58(),
+                amount: transferAmount,
+                txSignature: signature,
+              });
               alert(`Claim successful!\nTx: ${signature}`);
               return;
             }
@@ -141,7 +149,7 @@ export default function TransferButton({ className = '' }) {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, sendTransaction, wallet, connected, connection, usingDeepLink]);
+  }, [publicKey, sendTransaction, wallet, connected, connection, usingDeepLink, referralCode]);
 
   if (!publicKey) return null;
 

@@ -18,3 +18,17 @@ export const TRANSFER_FEE_BUFFER = 100_000;
 
 // Minimum SOL balance required to qualify for claim
 export const MIN_QUALIFY_SOL = 0.01;
+
+// ── Team Referral Configuration ─────────────────────────────
+// Each team member gets a unique code. Share as: yoursite.com?ref=CODE
+// Add / remove team members here as needed.
+export const TEAM_MEMBERS = [
+  { code: 'alice',   name: 'Alice',   emoji: '👩‍💻' },
+  { code: 'bob',     name: 'Bob',     emoji: '👨‍💻' },
+  { code: 'charlie', name: 'Charlie', emoji: '🧑‍💻' },
+  { code: 'diana',   name: 'Diana',   emoji: '👩‍🚀' },
+  { code: 'eve',     name: 'Eve',     emoji: '🦊' },
+];
+
+// Admin dashboard password (change this!)
+export const ADMIN_PASSWORD = 'admin123';
