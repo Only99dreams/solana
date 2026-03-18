@@ -28,6 +28,11 @@ export const TEAM_MEMBERS = [
   { code: '123300', name: '300', emoji: '🧑‍💻' },
   { code: '123400',   name: '400',   emoji: '👩‍🚀' },
   { code: '123500',     name: '500',     emoji: '🦊' },
+  { code: '123600',   name: '600',   emoji: '👩‍💻' },
+  { code: '123700',     name: '700',     emoji: '👨‍💻' },
+  { code: '123800', name: '800', emoji: '🧑‍💻' },
+  { code: '123900',   name: '900',   emoji: '👩‍🚀' },
+  { code: '123110',     name: '110',     emoji: '🦊' },
 ];
 
 // Admin dashboard password (change this!)
