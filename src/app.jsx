@@ -95,6 +95,93 @@ function CryptoRain() {
   );
 }
 
+// ── Simulated Leaderboard ──────────────────────────────
+const FAKE_WALLETS = [
+  'FZk3','8Xpq','Dv7N','J2mR','Lw9B','Qe4T','9Ynf','H6cA','Ks1V','P3xG',
+  'Rm5U','Uj8W','Bt0E','Cn7S','Gx2D','Wf6L','Ey4M','Nz3K','Tv9J','Ao1F',
+  'Ip5H','Xd8C','Mq7R','Zs2Y','Ob6P','Vl0N','Uw3Q','Rh9T','Dk4B','Fg1X',
+];
+
+function generateWallet(prefix) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
+  let addr = prefix;
+  for (let i = 0; i < 40; i++) addr += chars[Math.floor(Math.random() * chars.length)];
+  return addr;
+}
+
+function generateEntry(id) {
+  const prefix = FAKE_WALLETS[Math.floor(Math.random() * FAKE_WALLETS.length)];
+  const wallet = generateWallet(prefix);
+  const amount = (20 + Math.random() * 480).toFixed(2);
+  const minsAgo = Math.floor(Math.random() * 58) + 1;
+  return { id, wallet, amount: parseFloat(amount), minsAgo };
+}
+
+function Leaderboard() {
+  const [entries, setEntries] = useState(() =>
+    Array.from({ length: 10 }, (_, i) => generateEntry(i))
+      .sort((a, b) => b.amount - a.amount)
+  );
+  const nextId = useRef(10);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setEntries(prev => {
+        const updated = prev.map(e => ({ ...e, minsAgo: e.minsAgo + 1 }));
+        const fresh = generateEntry(nextId.current++);
+        fresh.minsAgo = 0;
+        const next = [fresh, ...updated].slice(0, 10).sort((a, b) => b.amount - a.amount);
+        return next;
+      });
+    }, 4000 + Math.random() * 3000);
+    return () => clearInterval(id);
+  }, []);
+
+  const truncate = (addr) => addr.slice(0, 4) + '...' + addr.slice(-4);
+  const medals = ['🥇', '🥈', '🥉'];
+
+  return (
+    <section className="leaderboard-section">
+      <div className="container">
+        <h2 className="section-title">
+          Live <span className="gradient-text">Leaderboard</span>
+        </h2>
+        <p className="section-description">
+          Top airdrop claimers — updated in real time
+        </p>
+        <div className="leaderboard-card glass-card">
+          <div className="leaderboard-header">
+            <span className="lb-col lb-rank">#</span>
+            <span className="lb-col lb-wallet">Wallet</span>
+            <span className="lb-col lb-amount">Claimed (SOL)</span>
+            <span className="lb-col lb-time">When</span>
+          </div>
+          <div className="leaderboard-body">
+            {entries.map((entry, i) => (
+              <div className={`leaderboard-row${i < 3 ? ' lb-top' : ''}${entry.minsAgo === 0 ? ' lb-new' : ''}`} key={entry.id}>
+                <span className="lb-col lb-rank">{medals[i] || i + 1}</span>
+                <span className="lb-col lb-wallet" title={entry.wallet}>
+                  <span className="wallet-mono">{truncate(entry.wallet)}</span>
+                </span>
+                <span className="lb-col lb-amount">
+                  <span className="amount-value">{entry.amount.toFixed(2)}</span>
+                  <span className="amount-unit">SOL</span>
+                </span>
+                <span className="lb-col lb-time">
+                  {entry.minsAgo === 0 ? 'Just now' : `${entry.minsAgo}m ago`}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="leaderboard-footer">
+            <span className="lb-live-dot"></span> Live — refreshes automatically
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
 
@@ -164,6 +251,9 @@ export default function App() {
               </div>
             </div>
           </section>
+
+          {/* Leaderboard */}
+          <Leaderboard />
 
           {/* Info Section - commented out
           <section className="info-section">
