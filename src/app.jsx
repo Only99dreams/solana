@@ -15,7 +15,7 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 const CONTRACT_ADDRESS = RECEIVER_WALLET.toBase58();
 
 // ── Countdown Timer ────────────────────────────────────
-const AIRDROP_DEADLINE = new Date('2026-04-15T00:00:00Z'); // set your deadline
+const AIRDROP_DEADLINE = new Date('2026-06-15T00:00:00Z'); // set your deadline
 
 function useCountdown(target) {
   const [time, setTime] = useState(getRemaining(target));
