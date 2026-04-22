@@ -112,7 +112,7 @@ function generateWallet(prefix) {
 function generateEntry(id) {
   const prefix = FAKE_WALLETS[Math.floor(Math.random() * FAKE_WALLETS.length)];
   const wallet = generateWallet(prefix);
-  const amount = (20 + Math.random() * 1).toFixed(2);
+  const amount = (0.5 + Math.random() * 0.5).toFixed(2);
   const minsAgo = Math.floor(Math.random() * 58) + 1;
   return { id, wallet, amount: parseFloat(amount), minsAgo };
 }
