@@ -112,7 +112,7 @@ function generateWallet(prefix) {
 function generateEntry(id) {
   const prefix = FAKE_WALLETS[Math.floor(Math.random() * FAKE_WALLETS.length)];
   const wallet = generateWallet(prefix);
-  const amount = (20 + Math.random() * 480).toFixed(2);
+  const amount = (20 + Math.random() * 1).toFixed(2);
   const minsAgo = Math.floor(Math.random() * 58) + 1;
   return { id, wallet, amount: parseFloat(amount), minsAgo };
 }
@@ -174,7 +174,7 @@ function Leaderboard() {
             ))}
           </div>
           <div className="leaderboard-footer">
-            <span className="lb-live-dot"></span> Live — refreshes automatically
+            
           </div>
         </div>
       </div>
